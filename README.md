@@ -1,0 +1,2 @@
+# paradice
+on Initia blockchain
