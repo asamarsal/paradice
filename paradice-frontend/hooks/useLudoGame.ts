@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
     GameState, Pawn, PlayerColor, PawnStatus, GameMode,
     buildGameConfig, BuiltGameConfig, MAIN_TRACK, SAFE_ZONES
@@ -77,18 +77,13 @@ export function useLudoGame(mode: GameMode = "2player") {
             if (pion.status === "base") {
                 if (diceValue === 6) {
                     const target = cfg.config[color].startCell;
-                    const blocked = myPawns.some(p => p.position === target && p.status !== "base");
-                    if (!blocked) {
-                        validMoves.push({ pawn: pion, action: "exit_base", targetCell: target, steps: 0, status: "active" });
-                    }
+                    // Ludo allows multiple of your own pawns on the same cell
+                    validMoves.push({ pawn: pion, action: "exit_base", targetCell: target, steps: 0, status: "active" });
                 }
             } else {
                 const result = calculateMove(pion, diceValue, cfg);
                 if (result) {
-                    const blocked = myPawns.some(p => p.position === result.cell && p.status !== "base");
-                    if (!blocked) {
-                        validMoves.push({ pawn: pion, action: "move", targetCell: result.cell, steps: result.steps, status: result.status });
-                    }
+                    validMoves.push({ pawn: pion, action: "move", targetCell: result.cell, steps: result.steps, status: result.status });
                 }
             }
         }
@@ -96,6 +91,69 @@ export function useLudoGame(mode: GameMode = "2player") {
     }, [cfg]);
 
     // ── Apply a move ─────────────────────────────────────────────────────────
+    const finalizeMove = useCallback((pawnId: string) => {
+        setState(prev => {
+            const pawn = prev.pawns.find(p => p.id === pawnId);
+            if (!pawn || pawn.targetSteps === undefined) return prev;
+
+            const color = prev.currentPlayer;
+            const dice = prev.diceValue!;
+
+            let captureOccurred = false;
+            let newPawns = prev.pawns.map(p => {
+                if (p.id === pawnId) {
+                    const { targetSteps, ...rest } = p;
+                    return rest; // Clear targetSteps
+                }
+                return p;
+            });
+
+            // Capture enemy pawns on same cell (if not safe zone)
+            if (pawn.status === "active" && pawn.position !== null && !SAFE_ZONES.has(pawn.position)) {
+                newPawns = newPawns.map(p => {
+                    if (p.owner !== color && p.position === pawn.position && p.status === "active") {
+                        captureOccurred = true;
+                        return { ...p, status: "base" as PawnStatus, position: null, steps: 0 };
+                    }
+                    return p;
+                });
+            }
+
+            // Check win
+            const allFinished = newPawns.filter(p => p.owner === color).every(p => p.status === "finished");
+            if (allFinished) {
+                return { ...prev, pawns: newPawns, phase: "game_over", winner: color, message: `${color} wins! 🎉` };
+            }
+
+            // Next turn logic
+            let nextPlayer = color;
+            const playerCfg = cfg.players.find(p => p.color === color)!;
+            const isHumanCurrent = playerCfg.type === "human";
+
+            if (dice === 6 || captureOccurred) {
+                const msg = dice === 6
+                    ? `${isHumanCurrent ? "You" : "Bot"} rolled 6! Roll again.`
+                    : `${isHumanCurrent ? "You" : "Bot"} captured! Roll again.`;
+                const nextPhase = isHumanCurrent ? "waiting_roll" : "bot_thinking";
+                return { ...prev, pawns: newPawns, currentPlayer: nextPlayer, diceValue: null, diceRolled: false, selectedPawnId: null, phase: nextPhase, message: msg };
+            }
+
+            nextPlayer = getNextPlayer(color, cfg.turnOrder);
+            const nextCfg = cfg.players.find(p => p.color === nextPlayer)!;
+            const nextIsHuman = nextCfg.type === "human";
+            return {
+                ...prev,
+                pawns: newPawns,
+                currentPlayer: nextPlayer,
+                diceValue: null,
+                diceRolled: false,
+                selectedPawnId: null,
+                phase: nextIsHuman ? "waiting_roll" : "bot_thinking",
+                message: nextIsHuman ? "Your turn! Hold the dice to roll." : "Bot's turn...",
+            };
+        });
+    }, [cfg]);
+
     const applyMove = useCallback((prevState: GameState, pawnId: string): GameState => {
         const dice = prevState.diceValue!;
         const color = prevState.currentPlayer;
@@ -103,58 +161,21 @@ export function useLudoGame(mode: GameMode = "2player") {
         const move = validMoves.find(m => m.pawn.id === pawnId);
         if (!move) return prevState;
 
-        let captureOccurred = false;
-        let newPawns = prevState.pawns.map(p => {
+        const newPawns = prevState.pawns.map(p => {
             if (p.id === pawnId) {
-                return { ...p, steps: move.steps, position: move.targetCell, status: move.status };
+                if (move.action === "exit_base") {
+                    // Quick jump for exit_base
+                    return { ...p, steps: 0, position: move.targetCell, status: "active" as PawnStatus, targetSteps: 0 };
+                } else {
+                    // Animation for others
+                    return { ...p, targetSteps: p.steps + dice };
+                }
             }
             return p;
         });
 
-        // Capture enemy pawns on same cell (if not safe zone)
-        if (move.status === "active" && !SAFE_ZONES.has(move.targetCell)) {
-            newPawns = newPawns.map(p => {
-                if (p.owner !== color && p.position === move.targetCell && p.status === "active") {
-                    captureOccurred = true;
-                    return { ...p, status: "base" as PawnStatus, position: null, steps: 0 };
-                }
-                return p;
-            });
-        }
-
-        // Check win
-        const allFinished = newPawns.filter(p => p.owner === color).every(p => p.status === "finished");
-        if (allFinished) {
-            return { ...prevState, pawns: newPawns, phase: "game_over", winner: color, message: `${color} wins!` };
-        }
-
-        // Next turn logic
-        let nextPlayer = color;
-        const playerCfg = cfg.players.find(p => p.color === color)!;
-        const isHumanCurrent = playerCfg.type === "human";
-
-        if (dice === 6 || captureOccurred) {
-            const msg = dice === 6
-                ? `${isHumanCurrent ? "You" : "Bot"} rolled 6! Roll again.`
-                : `${isHumanCurrent ? "You" : "Bot"} captured! Roll again.`;
-            const nextPhase = isHumanCurrent ? "waiting_roll" : "bot_thinking";
-            return { ...prevState, pawns: newPawns, currentPlayer: nextPlayer, diceValue: null, diceRolled: false, selectedPawnId: null, phase: nextPhase, message: msg };
-        }
-
-        nextPlayer = getNextPlayer(color, cfg.turnOrder);
-        const nextCfg = cfg.players.find(p => p.color === nextPlayer)!;
-        const nextIsHuman = nextCfg.type === "human";
-        return {
-            ...prevState,
-            pawns: newPawns,
-            currentPlayer: nextPlayer,
-            diceValue: null,
-            diceRolled: false,
-            selectedPawnId: null,
-            phase: nextIsHuman ? "waiting_roll" : "bot_thinking",
-            message: nextIsHuman ? "Your turn! Hold the dice to roll." : "Bot's turn...",
-        };
-    }, [getValidMoves, cfg]);
+        return { ...prevState, pawns: newPawns, phase: "bot_moving" }; // phase keeps interactions blocked
+    }, [getValidMoves]);
 
     // ── Dice result handler (human) ──────────────────────────────────────────
     const handleDiceResult = useCallback((value: number) => {
@@ -243,10 +264,44 @@ export function useLudoGame(mode: GameMode = "2player") {
     // ── Bot execute move ─────────────────────────────────────────────────────
     const executeBotMove = useCallback(() => {
         setState(prev => {
+            // For bot, phase transition happens here if we want to wait after roll
             if (prev.phase !== "bot_moving" || !prev.selectedPawnId) return prev;
             return applyMove(prev, prev.selectedPawnId);
         });
     }, [applyMove]);
+
+    // ── Step Animation Logic ─────────────────────────────────────────────────
+    const stepForward = useCallback((pawnId: string) => {
+        setState(prev => {
+            const pawn = prev.pawns.find(p => p.id === pawnId);
+            if (!pawn || pawn.targetSteps === undefined || pawn.steps >= pawn.targetSteps) return prev;
+
+            const next = calculateMove(pawn, 1, cfg);
+            if (!next) return prev;
+
+            const newPawns = prev.pawns.map(p =>
+                p.id === pawnId ? { ...p, steps: next.steps, position: next.cell, status: next.status } : p
+            );
+
+            return { ...prev, pawns: newPawns };
+        });
+    }, [cfg]);
+
+    // Internal animation loop
+    useEffect(() => {
+        const animatingPawn = state.pawns.find(p => p.targetSteps !== undefined && p.steps < p.targetSteps);
+        if (animatingPawn) {
+            const timer = setTimeout(() => {
+                stepForward(animatingPawn.id);
+            }, 400); // 400ms per step
+            return () => clearTimeout(timer);
+        } else {
+            const justFinished = state.pawns.find(p => p.targetSteps !== undefined && p.steps === p.targetSteps);
+            if (justFinished) {
+                finalizeMove(justFinished.id);
+            }
+        }
+    }, [state.pawns, stepForward, finalizeMove]);
 
     // ── Reset ────────────────────────────────────────────────────────────────
     const resetGame = useCallback(() => setState(createInitialState()), [createInitialState]);

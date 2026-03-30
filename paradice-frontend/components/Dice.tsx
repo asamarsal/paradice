@@ -54,13 +54,15 @@ const DiceFace = ({ value, transform }: { value: number, transform: string }) =>
 };
 
 export default function Dice({
-    onRollResult, disabled, message
+    onRollResult, disabled, message, value: externalValue
 }: {
     onRollResult: (val: number) => void;
     disabled?: boolean;
     message?: string;
+    value?: number | null;
 }) {
-    const [value, setValue] = useState(6);
+    const [internalValue, setInternalValue] = useState(6);
+    const value = externalValue ?? internalValue;
     const [isRolling, setIsRolling] = useState(false);
     const [isHolding, setIsHolding] = useState(false);
     const [rotation, setRotation] = useState({ x: 165, y: 15, z: 0 });
@@ -76,6 +78,14 @@ export default function Dice({
             default: return { x: 0, y: 0 };
         }
     };
+
+    // Sync rotation with value prop (for bots/external updates)
+    React.useEffect(() => {
+        if (externalValue && !isRolling) {
+            const target = getTargetOffset(externalValue);
+            setRotation({ x: target.x, y: target.y, z: 0 });
+        }
+    }, [externalValue, isRolling]);
 
     // Fast rotation while holding
     React.useEffect(() => {
@@ -108,7 +118,7 @@ export default function Dice({
         setIsRolling(true);
 
         const finalValue = Math.floor(Math.random() * 6) + 1;
-        setValue(finalValue);
+        setInternalValue(finalValue);
 
         const spins = 1080; // 3 extra spins to show "rolling" after release
         const targetOffset = getTargetOffset(finalValue);
@@ -163,7 +173,7 @@ export default function Dice({
                 <span className="font-bold text-gray-700 uppercase tracking-widest text-sm text-center max-w-[150px]">
                     {isHolding ? "RELEASING..." : (isRolling ? "ROLLING..." : (message || "HOLD TO SPIN"))}
                 </span>
-                {!isRolling && !isHolding && value && !disabled && (
+                {!isRolling && !isHolding && value && (
                     <span className="text-3xl font-black text-[#8B5CF6] mt-1">{value}</span>
                 )}
             </div>

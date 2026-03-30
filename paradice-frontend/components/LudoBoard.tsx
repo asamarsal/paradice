@@ -33,30 +33,36 @@ function SVGArrow({ cx, cy, rot, color }: { cx: number; cy: number; rot: number;
     );
 }
 
-function SVGPion({ cx, cy, color, id, clickable, selected, onClick }: {
+function SVGPion({ cx, cy, color, id, clickable, selected, scale = 1, offset = [0, 0], onClick, onMouseEnter, onMouseLeave }: {
     cx: number; cy: number; color: string; id: string;
-    clickable?: boolean; selected?: boolean; onClick?: () => void;
+    clickable?: boolean; selected?: boolean; scale?: number; offset?: [number, number];
+    onClick?: () => void; onMouseEnter?: () => void; onMouseLeave?: () => void;
 }) {
     return (
         <g
-            transform={`translate(${cx}, ${cy})`}
+            transform={`translate(${cx + offset[0]}, ${cy + offset[1]}) scale(${scale})`}
             id={id}
             data-pion-id={id}
             onClick={clickable ? onClick : undefined}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             style={{ cursor: clickable ? "pointer" : "default" }}
         >
             {/* Glow ring when selected/clickable */}
-            {selected && <circle cx={0} cy={-6} r={8} fill="none" stroke="gold" strokeWidth="2" opacity="0.9" />}
-            {clickable && !selected && <circle cx={0} cy={-6} r={7} fill="rgba(255,255,255,0.4)" stroke="gold" strokeWidth="1" opacity="0.7"><animate attributeName="r" values="6;8;6" dur="1.2s" repeatCount="indefinite" /></circle>}
-            {/* Outer border & white padding */}
-            <path d="M 0 0 Q -4.5 -5 -4.5 -9 A 4.5 4.5 0 1 1 4.5 -9 Q 4.5 -5 0 0 Z"
-                fill={C.white} stroke={C.black} strokeWidth="1" strokeLinejoin="round" />
-            {/* Colored Body */}
-            <path d="M 0 -1.5 Q -3 -5 -3 -9 A 3 3 0 1 1 3 -9 Q 3 -5 0 -1.5 Z"
+            {selected && <circle cx={0} cy={-6} r={7} fill="none" stroke="gold" strokeWidth="2" opacity="0.9" />}
+            {clickable && !selected && <circle cx={0} cy={-6} r={6} fill="rgba(255,255,255,0.4)" stroke="gold" strokeWidth="1" opacity="0.7"><animate attributeName="r" values="5.5;7;5.5" dur="1.2s" repeatCount="indefinite" /></circle>}
+
+            {/* Outer border & white padding (Slightly smaller: 4.5 -> 3.8) */}
+            <path d="M 0 0 Q -3.8 -4 -3.8 -8 A 3.8 3.8 0 1 1 3.8 -8 Q 3.8 -4 0 0 Z"
+                fill={C.white} stroke={C.black} strokeWidth="0.8" strokeLinejoin="round" />
+
+            {/* Colored Body (Slightly smaller: 3 -> 2.5) */}
+            <path d="M 0 -1.2 Q -2.5 -4 -2.5 -8 A 2.5 2.5 0 1 1 2.5 -8 Q 2.5 -4 0 -1.2 Z"
                 fill={color} stroke={C.black} strokeWidth="0.5" />
+
             {/* Glossy Highlights */}
-            <circle cx="-1.2" cy="-10" r="1.1" fill={C.white} />
-            <circle cx="-2.5" cy="-8.5" r="0.4" fill={C.white} />
+            <circle cx="-1" cy="-8.5" r="0.9" fill={C.white} />
+            <circle cx="-2" cy="-7.5" r="0.4" fill={C.white} />
         </g>
     );
 }
@@ -106,6 +112,7 @@ function getPawnPosition(pawn: Pawn, cfg: BuiltGameConfig): [number, number] | n
 
 export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick }: LudoBoardProps) {
     const { pawns, currentPlayer, selectedPawnId } = gameState;
+    const [hoveredCell, setHoveredCell] = React.useState<number | null>(null);
 
     // ── Grid lines ───────────────────────────────────────────────────────────
     const gridLines = [];
@@ -203,27 +210,104 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                     );
                 })}
 
-                {/* Render Pawns from game state */}
-                {activePawns.map(pawn => {
-                    const pos = getPawnPosition(pawn, cfg);
-                    if (!pos) return null;
-                    const [cx, cy] = pos;
-                    const color = C[pawn.owner];
-                    const isClickable = isHumanTurn && movablePawnIds.includes(pawn.id);
-                    const isSelected = pawn.id === selectedPawnId;
+                {/* Group active pawns by position for stacking */}
+                {(() => {
+                    const cellGroups: Record<number, Pawn[]> = {};
+                    const basePawns: Pawn[] = [];
+
+                    pawns.forEach(p => {
+                        if (p.status === "finished") return;
+                        if (p.status === "base") {
+                            basePawns.push(p);
+                        } else if (p.position !== null) {
+                            if (!cellGroups[p.position]) cellGroups[p.position] = [];
+                            cellGroups[p.position].push(p);
+                        }
+                    });
+
+                    const renderedPawns: React.ReactNode[] = [];
+
+                    // Render base pawns
+                    basePawns.forEach(pawn => {
+                        const pos = getPawnPosition(pawn, cfg);
+                        if (!pos) return;
+                        const [cx, cy] = pos;
+                        renderedPawns.push(
+                            <SVGPion
+                                key={pawn.id}
+                                id={pawn.id}
+                                cx={cx}
+                                cy={cy - 1}
+                                color={C[pawn.owner]}
+                                clickable={isHumanTurn && movablePawnIds.includes(pawn.id)}
+                                selected={pawn.id === selectedPawnId}
+                                onClick={() => onPawnClick(pawn.id)}
+                            />
+                        );
+                    });
+
+                    // Render stacked pawns
+                    Object.entries(cellGroups).forEach(([cellStr, group]) => {
+                        const cellId = parseInt(cellStr);
+                        const pos = CELL_COORDS[cellId];
+                        if (!pos) return;
+
+                        const [cx, cy] = pos;
+                        const groupSize = group.length;
+                        const scale = groupSize > 1 ? 0.7 : 1;
+
+                        group.forEach((pawn, idx) => {
+                            let offsetX = 0;
+                            let offsetY = 0;
+                            if (groupSize > 1) {
+                                // Simple grid offset for stacks
+                                const offsets = [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 0]];
+                                offsetX = (offsets[idx % 5][0]);
+                                offsetY = (offsets[idx % 5][1]);
+                            }
+
+                            renderedPawns.push(
+                                <SVGPion
+                                    key={pawn.id}
+                                    id={pawn.id}
+                                    cx={cx}
+                                    cy={cy - 1}
+                                    color={C[pawn.owner]}
+                                    clickable={isHumanTurn && movablePawnIds.includes(pawn.id)}
+                                    selected={pawn.id === selectedPawnId}
+                                    scale={scale}
+                                    offset={[offsetX, offsetY]}
+                                    onClick={() => onPawnClick(pawn.id)}
+                                    onMouseEnter={() => setHoveredCell(cellId)}
+                                    onMouseLeave={() => setHoveredCell(null)}
+                                />
+                            );
+                        });
+                    });
+
+                    return renderedPawns;
+                })()}
+
+                {/* Stacking Tooltip Overlay */}
+                {hoveredCell !== null && (() => {
+                    const group = pawns.filter(p => p.position === hoveredCell && p.status !== "base" && p.status !== "finished");
+                    if (group.length <= 1) return null;
+
+                    const [cx, cy] = CELL_COORDS[hoveredCell] || [0, 0];
                     return (
-                        <SVGPion
-                            key={pawn.id}
-                            id={pawn.id}
-                            cx={cx}
-                            cy={cy - 1}
-                            color={color}
-                            clickable={isClickable}
-                            selected={isSelected}
-                            onClick={() => onPawnClick(pawn.id)}
-                        />
+                        <g transform={`translate(${cx}, ${cy - 12})`} style={{ pointerEvents: "none" }}>
+                            <rect x="-20" y="-12" width="40" height={group.length * 5 + 4} rx="2" fill="rgba(0,0,0,0.85)" stroke="white" strokeWidth="0.5" />
+                            {group.map((p, i) => (
+                                <g key={p.id} transform={`translate(0, ${i * 5 - 5})`}>
+                                    <circle cx="-12" cy="0" r="1.5" fill={C[p.owner]} stroke="white" strokeWidth="0.2" />
+                                    <text x="-8" y="1.5" fill="white" fontSize="4" fontWeight="bold" style={{ textTransform: "capitalize" }}>
+                                        {p.owner}
+                                    </text>
+                                </g>
+                            ))}
+                        </g>
                     );
-                })}
+                })()}
             </svg>
         </div>
     );

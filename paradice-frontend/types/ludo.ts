@@ -12,6 +12,7 @@ export interface Pawn {
     status: PawnStatus;
     position: number | null;
     steps: number;
+    targetSteps?: number; // Added for step-by-step animation
 }
 
 export interface GameState {

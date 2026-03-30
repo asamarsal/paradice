@@ -23,7 +23,7 @@ export default function Home() {
   // Visually delay bot's move
   useEffect(() => {
     if (currentPlayerCfg?.type === "bot" && state.phase === "bot_moving") {
-      const timer = setTimeout(() => executeBotMove(), 1200);
+      const timer = setTimeout(() => executeBotMove(), 2000); // Wait 2s to show dice then start moving
       return () => clearTimeout(timer);
     }
   }, [state.currentPlayer, state.phase, executeBotMove, currentPlayerCfg]);
@@ -63,6 +63,7 @@ export default function Home() {
           <Dice
             onRollResult={handleDiceResult}
             disabled={!canRoll}
+            value={state.diceValue}
             message={currentPlayerCfg?.type === "bot" ? "BOT TURN" : (canRoll ? "HOLD TO SPIN" : "WAITING...")}
           />
           <div className="mt-4 text-xs text-gray-500 font-mono text-center">
