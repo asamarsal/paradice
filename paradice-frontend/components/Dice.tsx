@@ -53,45 +53,75 @@ const DiceFace = ({ value, transform }: { value: number, transform: string }) =>
     );
 };
 
-export default function Dice() {
+export default function Dice({
+    onRollResult, disabled, message
+}: {
+    onRollResult: (val: number) => void;
+    disabled?: boolean;
+    message?: string;
+}) {
     const [value, setValue] = useState(6);
     const [isRolling, setIsRolling] = useState(false);
-    // Start with a slight 3D angle showing face 6 (Back) perfectly?
-    // Actually, setting initial rotation to face 6: target offset for 6 is x:180, y:0.
-    // We can just add a slight tilt: x: 180 - 15, y: 15 so it looks 3D!
+    const [isHolding, setIsHolding] = useState(false);
     const [rotation, setRotation] = useState({ x: 165, y: 15, z: 0 });
 
+    const getTargetOffset = (val: number) => {
+        switch (val) {
+            case 1: return { x: 0, y: 0 };
+            case 6: return { x: 180, y: 0 };
+            case 2: return { x: 0, y: -90 };
+            case 5: return { x: 0, y: 90 };
+            case 3: return { x: -90, y: 0 };
+            case 4: return { x: 90, y: 0 };
+            default: return { x: 0, y: 0 };
+        }
+    };
+
+    // Fast rotation while holding
+    React.useEffect(() => {
+        let interval: any;
+        if (isHolding) {
+            interval = setInterval(() => {
+                setRotation(prev => ({
+                    x: prev.x + 20,
+                    y: prev.y + 25,
+                    z: prev.z + 10
+                }));
+            }, 16);
+        }
+        return () => clearInterval(interval);
+    }, [isHolding]);
+
+    const startHold = (e: React.MouseEvent | React.TouchEvent) => {
+        if (isRolling || disabled) return;
+        setIsHolding(true);
+    };
+
+    const finishHold = () => {
+        if (!isHolding || disabled) return;
+        setIsHolding(false);
+        rollDice();
+    };
+
     const rollDice = () => {
-        if (isRolling) return;
+        if (isRolling || disabled) return;
         setIsRolling(true);
 
         const finalValue = Math.floor(Math.random() * 6) + 1;
         setValue(finalValue);
 
-        const spins = 1440; // 4 full physical spins
-        const getTargetOffset = (val: number) => {
-            switch (val) {
-                case 1: return { x: 0, y: 0 };
-                case 6: return { x: 180, y: 0 };
-                case 2: return { x: 0, y: -90 };
-                case 5: return { x: 0, y: 90 };
-                case 3: return { x: -90, y: 0 };
-                case 4: return { x: 90, y: 0 };
-                default: return { x: 0, y: 0 };
-            }
-        };
-
+        const spins = 1080; // 3 extra spins to show "rolling" after release
         const targetOffset = getTargetOffset(finalValue);
 
-        // Round to nearest 360 block, add our aggressive spins, then map to exactly our face + slight tilt for aesthetics
-        const newX = Math.floor(rotation.x / 360) * 360 + spins + targetOffset.x - 15;
-        const newY = Math.floor(rotation.y / 360) * 360 + spins + targetOffset.y + 15;
+        // Round up to avoid backward jumps and add spins
+        const newX = Math.ceil(rotation.x / 360) * 360 + spins + targetOffset.x;
+        const newY = Math.ceil(rotation.y / 360) * 360 + spins + targetOffset.y;
 
         setRotation({ x: newX, y: newY, z: 0 });
 
-        // CSS transition handles animation. Unlock after 1.5s
         setTimeout(() => {
             setIsRolling(false);
+            onRollResult(finalValue);
         }, 1500);
     };
 
@@ -99,9 +129,16 @@ export default function Dice() {
         <div className="flex flex-col items-center gap-12 p-4">
             {/* Perspective container */}
             <button
-                onClick={rollDice}
-                disabled={isRolling}
-                className="w-24 h-24 relative outline-none cursor-pointer"
+                onMouseDown={startHold}
+                onMouseUp={finishHold}
+                onMouseLeave={finishHold}
+                onTouchStart={startHold}
+                onTouchEnd={finishHold}
+                onClick={() => !isRolling && !isHolding && !disabled && rollDice()}
+                disabled={isRolling || disabled}
+                className={`w-24 h-24 relative outline-none select-none transition-transform
+                    ${disabled && !isRolling ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-95"}
+                `}
                 style={{ perspective: "600px" }}
             >
                 <div
@@ -109,7 +146,7 @@ export default function Dice() {
                     style={{
                         transformStyle: "preserve-3d",
                         transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
-                        transition: "transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                        transition: isHolding ? "none" : "transform 1.5s cubic-bezier(0.25, 1, 0.5, 1)"
                     }}
                 >
                     {/* w-24 is 96px, so half is 48px */}
@@ -122,11 +159,11 @@ export default function Dice() {
                 </div>
             </button>
 
-            <div className="flex flex-col items-center">
-                <span className="font-bold text-gray-700 uppercase tracking-widest text-sm">
-                    {isRolling ? "Rolling..." : "Tap to Roll"}
+            <div className="flex flex-col items-center h-[80px]">
+                <span className="font-bold text-gray-700 uppercase tracking-widest text-sm text-center max-w-[150px]">
+                    {isHolding ? "RELEASING..." : (isRolling ? "ROLLING..." : (message || "HOLD TO SPIN"))}
                 </span>
-                {!isRolling && value && (
+                {!isRolling && !isHolding && value && !disabled && (
                     <span className="text-3xl font-black text-[#8B5CF6] mt-1">{value}</span>
                 )}
             </div>
