@@ -1,32 +1,39 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import LudoBoard from "@/components/LudoBoard";
-import Dice from "@/components/Dice";
+import Dice, { DiceHandle } from "@/components/Dice";
 import { useLudoGame } from "@/hooks/useLudoGame";
 
 export default function Home() {
   const { state, cfg, handleDiceResult, handlePawnClick, runBotTurn, executeBotMove, resetGame, getValidMoves } = useLudoGame("2player");
+  const diceRef = useRef<DiceHandle>(null);
 
   const currentPlayerCfg = cfg.players.find(p => p.color === state.currentPlayer);
+  const isBot = currentPlayerCfg?.type === "bot";
 
-  // Auto-trigger bot turn
   useEffect(() => {
-    if (currentPlayerCfg?.type === "bot" && state.phase === "bot_thinking") {
+    // Bot Roll
+    if (state.phase === "waiting_roll" && isBot) {
       const timer = setTimeout(() => {
-        const value = Math.floor(Math.random() * 6) + 1;
-        runBotTurn(value);
+        diceRef.current?.rollDice();
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [state.currentPlayer, state.phase, runBotTurn, currentPlayerCfg]);
-
-  // Visually delay bot's move
-  useEffect(() => {
-    if (currentPlayerCfg?.type === "bot" && state.phase === "bot_moving") {
-      const timer = setTimeout(() => executeBotMove(), 2000); // Wait 2s to show dice then start moving
+    // Bot Choose Move (Thinking)
+    if (state.phase === "bot_thinking" && isBot) {
+      const timer = setTimeout(() => {
+        runBotTurn(state.diceValue!);
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [state.currentPlayer, state.phase, executeBotMove, currentPlayerCfg]);
+    // Bot Walk Animation
+    if (state.phase === "bot_moving") {
+      const timer = setTimeout(() => {
+        executeBotMove();
+      }, 2000); // Wait for user to see the dice or the step
+      return () => clearTimeout(timer);
+    }
+  }, [state.phase, isBot, runBotTurn, executeBotMove, state.diceValue]);
 
   const isPlayerTurn = currentPlayerCfg?.type === "human";
   const canRoll = isPlayerTurn && state.phase === "waiting_roll";
@@ -61,10 +68,12 @@ export default function Home() {
       <main className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-12 p-4 sm:p-8">
         <div className="flex-shrink-0 flex flex-col items-center">
           <Dice
+            ref={diceRef}
             onRollResult={handleDiceResult}
             disabled={!canRoll}
             value={state.diceValue}
-            message={currentPlayerCfg?.type === "bot" ? "BOT TURN" : (canRoll ? "HOLD TO SPIN" : "WAITING...")}
+            isBot={isBot}
+            message={isBot ? "BOT TURN" : (canRoll ? "HOLD TO SPIN" : "WAITING...")}
           />
           <div className="mt-4 text-xs text-gray-500 font-mono text-center">
             <div>Phase: <strong>{state.phase}</strong></div>

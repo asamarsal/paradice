@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 
 const getDots = (val: number) => {
     const dots = [];
@@ -53,17 +53,25 @@ const DiceFace = ({ value, transform }: { value: number, transform: string }) =>
     );
 };
 
-export default function Dice({
-    onRollResult, disabled, message, value: externalValue
-}: {
+export interface DiceHandle {
+    rollDice: (forcedValue?: number) => void;
+}
+
+interface DiceProps {
     onRollResult: (val: number) => void;
     disabled?: boolean;
     message?: string;
     value?: number | null;
-}) {
+    isBot?: boolean;
+}
+
+const Dice = forwardRef<DiceHandle, DiceProps>(({
+    onRollResult, disabled, message, value: externalValue, isBot
+}, ref) => {
     const [internalValue, setInternalValue] = useState(6);
     const value = externalValue ?? internalValue;
     const [isRolling, setIsRolling] = useState(false);
+    const isRollingRef = useRef(false);
     const [isHolding, setIsHolding] = useState(false);
     const [rotation, setRotation] = useState({ x: 165, y: 15, z: 0 });
 
@@ -79,16 +87,16 @@ export default function Dice({
         }
     };
 
-    // Sync rotation with value prop (for bots/external updates)
-    React.useEffect(() => {
-        if (externalValue && !isRolling) {
+    // Sync rotation with value prop (ONLY for bots)
+    useEffect(() => {
+        if (isBot && externalValue && !isRolling) {
             const target = getTargetOffset(externalValue);
             setRotation({ x: target.x, y: target.y, z: 0 });
         }
-    }, [externalValue, isRolling]);
+    }, [externalValue, isRolling, isBot]);
 
     // Fast rotation while holding
-    React.useEffect(() => {
+    useEffect(() => {
         let interval: any;
         if (isHolding) {
             interval = setInterval(() => {
@@ -102,22 +110,12 @@ export default function Dice({
         return () => clearInterval(interval);
     }, [isHolding]);
 
-    const startHold = (e: React.MouseEvent | React.TouchEvent) => {
-        if (isRolling || disabled) return;
-        setIsHolding(true);
-    };
-
-    const finishHold = () => {
-        if (!isHolding || disabled) return;
-        setIsHolding(false);
-        rollDice();
-    };
-
-    const rollDice = () => {
-        if (isRolling || disabled) return;
+    const rollDice = (forcedValue?: number) => {
+        if (isRollingRef.current || (disabled && !isBot && forcedValue === undefined)) return;
+        isRollingRef.current = true;
         setIsRolling(true);
 
-        const finalValue = Math.floor(Math.random() * 6) + 1;
+        const finalValue = forcedValue ?? (Math.floor(Math.random() * 6) + 1);
         setInternalValue(finalValue);
 
         const spins = 1080; // 3 extra spins to show "rolling" after release
@@ -130,21 +128,41 @@ export default function Dice({
         setRotation({ x: newX, y: newY, z: 0 });
 
         setTimeout(() => {
+            isRollingRef.current = false;
             setIsRolling(false);
             onRollResult(finalValue);
         }, 1500);
     };
 
+    useImperativeHandle(ref, () => ({
+        rollDice: (forcedValue?: number) => rollDice(forcedValue)
+    }));
+
+    const startHold = (e: React.MouseEvent | React.TouchEvent) => {
+        if (isRolling || disabled) return;
+        setIsHolding(true);
+    };
+
+    const finishHold = () => {
+        if (!isHolding || disabled) return;
+        setIsHolding(false);
+        rollDice();
+    };
+
     return (
         <div className="flex flex-col items-center gap-12 p-4">
-            {/* Perspective container */}
             <button
                 onMouseDown={startHold}
                 onMouseUp={finishHold}
                 onMouseLeave={finishHold}
                 onTouchStart={startHold}
                 onTouchEnd={finishHold}
-                onClick={() => !isRolling && !isHolding && !disabled && rollDice()}
+                onClick={(e) => {
+                    // Prevent double-trigger from MouseUp and Click if already rolling
+                    if (!isRollingRef.current && !isHolding && !disabled) {
+                        rollDice();
+                    }
+                }}
                 disabled={isRolling || disabled}
                 className={`w-24 h-24 relative outline-none select-none transition-transform
                     ${disabled && !isRolling ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-95"}
@@ -159,7 +177,6 @@ export default function Dice({
                         transition: isHolding ? "none" : "transform 1.5s cubic-bezier(0.25, 1, 0.5, 1)"
                     }}
                 >
-                    {/* w-24 is 96px, so half is 48px */}
                     <DiceFace value={1} transform="rotateY(0deg) translateZ(48px)" />
                     <DiceFace value={6} transform="rotateY(180deg) translateZ(48px)" />
                     <DiceFace value={2} transform="rotateY(90deg) translateZ(48px)" />
@@ -179,4 +196,7 @@ export default function Dice({
             </div>
         </div>
     );
-}
+});
+
+Dice.displayName = "Dice";
+export default Dice;

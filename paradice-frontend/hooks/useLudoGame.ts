@@ -134,7 +134,7 @@ export function useLudoGame(mode: GameMode = "2player") {
                 const msg = dice === 6
                     ? `${isHumanCurrent ? "You" : "Bot"} rolled 6! Roll again.`
                     : `${isHumanCurrent ? "You" : "Bot"} captured! Roll again.`;
-                const nextPhase = isHumanCurrent ? "waiting_roll" : "bot_thinking";
+                const nextPhase = "waiting_roll";
                 return { ...prev, pawns: newPawns, currentPlayer: nextPlayer, diceValue: null, diceRolled: false, selectedPawnId: null, phase: nextPhase, message: msg };
             }
 
@@ -148,7 +148,7 @@ export function useLudoGame(mode: GameMode = "2player") {
                 diceValue: null,
                 diceRolled: false,
                 selectedPawnId: null,
-                phase: nextIsHuman ? "waiting_roll" : "bot_thinking",
+                phase: "waiting_roll",
                 message: nextIsHuman ? "Your turn! Hold the dice to roll." : "Bot's turn...",
             };
         });
@@ -182,6 +182,8 @@ export function useLudoGame(mode: GameMode = "2player") {
         setState(prev => {
             if (prev.phase !== "waiting_roll" || prev.diceRolled) return prev;
             const validMoves = getValidMoves(prev.pawns, prev.currentPlayer, value);
+            const playerCfg = cfg.players.find(p => p.color === prev.currentPlayer);
+            const isBot = playerCfg?.type === "bot";
 
             if (validMoves.length === 0) {
                 const nextPlayer = value === 6 ? prev.currentPlayer : getNextPlayer(prev.currentPlayer, cfg.turnOrder);
@@ -192,7 +194,7 @@ export function useLudoGame(mode: GameMode = "2player") {
                     currentPlayer: nextPlayer,
                     diceValue: null,
                     diceRolled: false,
-                    phase: nextIsHuman ? "waiting_roll" : "bot_thinking",
+                    phase: "waiting_roll",
                     message: value === 6 ? "No moves available. Roll again!" : `No moves. ${nextIsHuman ? "Your turn!" : "Bot's turn..."}`,
                 };
             }
@@ -201,6 +203,11 @@ export function useLudoGame(mode: GameMode = "2player") {
             if (validMoves.length === 1) {
                 const stateWithDice = { ...prev, diceValue: value, diceRolled: true, phase: "waiting_move" as const, message: "Moving..." };
                 return applyMove(stateWithDice, validMoves[0].pawn.id);
+            }
+
+            // If it's a bot and several moves exist, go to bot_thinking to pick one
+            if (isBot) {
+                return { ...prev, diceValue: value, diceRolled: true, phase: "bot_thinking" as const, message: "Bot is thinking..." };
             }
 
             return { ...prev, diceValue: value, diceRolled: true, phase: "waiting_move" as const, message: "Choose a pawn to move." };
@@ -235,7 +242,7 @@ export function useLudoGame(mode: GameMode = "2player") {
                     currentPlayer: nextPlayer,
                     diceValue: null,
                     diceRolled: false,
-                    phase: nextIsHuman ? "waiting_roll" : "bot_thinking",
+                    phase: "waiting_roll",
                     message: `Bot passed. ${nextIsHuman ? "Your turn!" : "Next bot..."}`,
                 };
             }
