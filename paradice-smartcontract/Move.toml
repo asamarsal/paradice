@@ -1,0 +1,10 @@
+[package]
+name = "paradice_ludo"
+version = "0.0.1"
+
+[dependencies]
+InitiaStdlib = { git = "https://github.com/initia-labs/initia.git", subdir = "framework/initia-framework", rev = "main" }
+
+[addresses]
+paradice_ludo = "0x1"
+initia_std = "0x1"

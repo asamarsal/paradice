@@ -21,14 +21,15 @@ function calculateMove(
         return { cell: pathCfg.finalCell, status: "finished", steps: newSteps };
     }
 
-    // Home lane: steps 51-56 → homeLane[0-5]
-    // (main track has 51 cells = steps 0-50, then 6 home lane cells)
-    if (newSteps >= 51) {
-        const idx = newSteps - 51;
+    // Home lane entry: totalSteps - 5 is the first home lane step
+    // (e.g., Red: totalSteps=56 → home at step 51, Others: totalSteps=57 → home at step 52)
+    const homeStart = pathCfg.totalSteps - 5; // homeLane has 6 cells, finalCell is at totalSteps
+    if (newSteps >= homeStart) {
+        const idx = newSteps - homeStart;
         return { cell: pathCfg.homeLane[idx], status: "home_lane", steps: newSteps };
     }
 
-    // On main track (steps 0-50)
+    // On main track (steps 0 to homeStart-1)
     const trackIndex = (cfg.startOffset[pawn.owner] + newSteps) % MAIN_TRACK.length;
     return { cell: MAIN_TRACK[trackIndex], status: "active", steps: newSteps };
 }

@@ -74,11 +74,11 @@ export const CELL_COORDS: Record<number, [number, number]> = {
 
 export const MAIN_TRACK = [
     2, 1, 52, 51, 50, 49, 48, 47, 46, 45,
-    44, 43, 42, 40, 39, 38, 37, 36, 35, 34,
-    33, 32, 31, 30, 29, 28, 27, 26, 25, 24,
-    23, 22, 21, 20, 19, 18, 17, 16, 15, 14,
-    13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
-    3
+    44, 43, 42, 41, 40, 39, 38, 37, 36, 35,
+    34, 33, 32, 31, 30, 29, 28, 27, 26, 25,
+    24, 23, 22, 21, 20, 19, 18, 17, 16, 15,
+    14, 13, 12, 11, 10, 9, 8, 7, 6, 5,
+    4, 3
 ];
 
 export const SAFE_ZONES = new Set([2, 5, 9, 15, 18, 22, 28, 31, 34, 39, 41, 44, 54, 59]);
@@ -88,10 +88,10 @@ export const SAFE_ZONES = new Set([2, 5, 9, 15, 18, 22, 28, 31, 34, 39, 41, 44, 
 // homeEntry = last cell on main track before entering home lane
 // startOffset = index of startCell in MAIN_TRACK
 export const SLOT_PATHS: Record<BoardSlot, PathConfig> = {
-    TL: { startCell: 39, homeEntry: 40, homeLane: [71, 72, 73, 74, 75, 76], finalCell: 76, totalSteps: 57, startOffset: 14 },
-    TR: { startCell: 26, homeEntry: 27, homeLane: [65, 66, 67, 68, 69, 70], finalCell: 70, totalSteps: 57, startOffset: 27 },
-    BL: { startCell: 52, homeEntry: 1, homeLane: [53, 54, 55, 56, 57, 58], finalCell: 58, totalSteps: 57, startOffset: 2 },
-    BR: { startCell: 13, homeEntry: 14, homeLane: [59, 60, 61, 62, 63, 64], finalCell: 64, totalSteps: 57, startOffset: 40 },
+    TL: { startCell: 39, homeEntry: 41, homeLane: [71, 72, 73, 74, 75, 76], finalCell: 76, totalSteps: 56, startOffset: 15 },
+    TR: { startCell: 26, homeEntry: 28, homeLane: [65, 66, 67, 68, 69, 70], finalCell: 70, totalSteps: 56, startOffset: 28 },
+    BL: { startCell: 52, homeEntry: 2, homeLane: [53, 54, 55, 56, 57, 58], finalCell: 58, totalSteps: 56, startOffset: 2 },
+    BR: { startCell: 13, homeEntry: 15, homeLane: [59, 60, 61, 62, 63, 64], finalCell: 64, totalSteps: 56, startOffset: 41 },
 };
 
 // Home base pawn positions (SVG coords for the 4 slots inside each base)

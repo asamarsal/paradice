@@ -160,112 +160,79 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                 );
             })}
 
-            <svg viewBox="0 0 150 150" className="w-full h-full block bg-white border-[1.5px] border-black shadow-lg">
-                <rect x="0" y="0" width="150" height="150" fill={C.white} />
+            <svg viewBox="0 0 160 170" className="w-full h-full block bg-white border-[1.5px] border-black shadow-lg" style={{ overflow: "visible" }}>
+                <g transform="translate(5, 12)">
+                    <rect x="0" y="0" width="150" height="150" fill={C.white} />
 
-                {/* Home lane colored strips + start cell highlights (dynamic per mode) */}
-                {(["TL", "TR", "BL", "BR"] as const).map(slot => {
-                    const vis = SLOT_VISUAL[slot];
-                    const col = slotColor[slot];
-                    return (
-                        <React.Fragment key={slot}>
-                            <rect x={vis.laneRect.x} y={vis.laneRect.y} width={vis.laneRect.w} height={vis.laneRect.h} fill={col} />
-                            <rect x={vis.startRect.x} y={vis.startRect.y} width={vis.startRect.w} height={vis.startRect.h} fill={col} />
-                        </React.Fragment>
-                    );
-                })}
-
-                {gridLines}
-
-                {/* Home bases (dynamic colors) */}
-                {(["TL", "TR", "BL", "BR"] as const).map(slot => {
-                    const vis = SLOT_VISUAL[slot];
-                    const sc = cfg.players.find(p => p.slot === slot)!;
-                    return <HomeBase key={slot} x={vis.baseX} y={vis.baseY} color={C[sc.color]} baseName={sc.color} />;
-                })}
-
-                {/* Center triangles (dynamic colors) */}
-                {(["TL", "TR", "BL", "BR"] as const).map(slot => {
-                    const vis = SLOT_VISUAL[slot];
-                    return <polygon key={`tri-${slot}`} points={vis.trianglePoints} fill={slotColor[slot]} stroke={C.black} strokeWidth="0.5" />;
-                })}
-
-                {/* Borders */}
-                <line x1="60" y1="0" x2="60" y2="150" stroke={C.black} strokeWidth="1" />
-                <line x1="90" y1="0" x2="90" y2="150" stroke={C.black} strokeWidth="1" />
-                <line x1="0" y1="60" x2="150" y2="60" stroke={C.black} strokeWidth="1" />
-                <line x1="0" y1="90" x2="150" y2="90" stroke={C.black} strokeWidth="1" />
-                <line x1="60" y1="60" x2="90" y2="90" stroke={C.black} strokeWidth="1" />
-                <line x1="60" y1="90" x2="90" y2="60" stroke={C.black} strokeWidth="1" />
-                <rect x="0" y="0" width="150" height="150" fill="none" stroke={C.black} strokeWidth="2" />
-
-                {/* Arrows & Stars (dynamic colors) */}
-                {(["TL", "TR", "BL", "BR"] as const).map(slot => {
-                    const vis = SLOT_VISUAL[slot];
-                    return (
-                        <React.Fragment key={`icons-${slot}`}>
-                            <SVGArrow cx={vis.arrowCx} cy={vis.arrowCy} rot={vis.arrowRot} color={slotColor[slot]} />
-                            <SVGStar cx={vis.starCx} cy={vis.starCy} />
-                        </React.Fragment>
-                    );
-                })}
-
-                {/* Group active pawns by position for stacking */}
-                {(() => {
-                    const cellGroups: Record<number, Pawn[]> = {};
-                    const basePawns: Pawn[] = [];
-
-                    pawns.forEach(p => {
-                        if (p.status === "finished") return;
-                        if (p.status === "base") {
-                            basePawns.push(p);
-                        } else if (p.position !== null) {
-                            if (!cellGroups[p.position]) cellGroups[p.position] = [];
-                            cellGroups[p.position].push(p);
-                        }
-                    });
-
-                    const renderedPawns: React.ReactNode[] = [];
-
-                    // Render base pawns
-                    basePawns.forEach(pawn => {
-                        const pos = getPawnPosition(pawn, cfg);
-                        if (!pos) return;
-                        const [cx, cy] = pos;
-                        renderedPawns.push(
-                            <SVGPion
-                                key={pawn.id}
-                                id={pawn.id}
-                                cx={cx}
-                                cy={cy - 1}
-                                color={C[pawn.owner]}
-                                clickable={isHumanTurn && movablePawnIds.includes(pawn.id)}
-                                selected={pawn.id === selectedPawnId}
-                                onClick={() => onPawnClick(pawn.id)}
-                            />
+                    {/* Home lane colored strips + start cell highlights (dynamic per mode) */}
+                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                        const vis = SLOT_VISUAL[slot];
+                        const col = slotColor[slot];
+                        return (
+                            <React.Fragment key={slot}>
+                                <rect x={vis.laneRect.x} y={vis.laneRect.y} width={vis.laneRect.w} height={vis.laneRect.h} fill={col} />
+                                <rect x={vis.startRect.x} y={vis.startRect.y} width={vis.startRect.w} height={vis.startRect.h} fill={col} />
+                            </React.Fragment>
                         );
-                    });
+                    })}
 
-                    // Render stacked pawns
-                    Object.entries(cellGroups).forEach(([cellStr, group]) => {
-                        const cellId = parseInt(cellStr);
-                        const pos = CELL_COORDS[cellId];
-                        if (!pos) return;
+                    {gridLines}
 
-                        const [cx, cy] = pos;
-                        const groupSize = group.length;
-                        const scale = groupSize > 1 ? 0.7 : 1;
+                    {/* Home bases (dynamic colors) */}
+                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                        const vis = SLOT_VISUAL[slot];
+                        const sc = cfg.players.find(p => p.slot === slot)!;
+                        return <HomeBase key={slot} x={vis.baseX} y={vis.baseY} color={C[sc.color]} baseName={sc.color} />;
+                    })}
 
-                        group.forEach((pawn, idx) => {
-                            let offsetX = 0;
-                            let offsetY = 0;
-                            if (groupSize > 1) {
-                                // Simple grid offset for stacks
-                                const offsets = [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 0]];
-                                offsetX = (offsets[idx % 5][0]);
-                                offsetY = (offsets[idx % 5][1]);
+                    {/* Center triangles (dynamic colors) */}
+                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                        const vis = SLOT_VISUAL[slot];
+                        return <polygon key={`tri-${slot}`} points={vis.trianglePoints} fill={slotColor[slot]} stroke={C.black} strokeWidth="0.5" />;
+                    })}
+
+                    {/* Borders */}
+                    <line x1="60" y1="0" x2="60" y2="150" stroke={C.black} strokeWidth="1" />
+                    <line x1="90" y1="0" x2="90" y2="150" stroke={C.black} strokeWidth="1" />
+                    <line x1="0" y1="60" x2="150" y2="60" stroke={C.black} strokeWidth="1" />
+                    <line x1="0" y1="90" x2="150" y2="90" stroke={C.black} strokeWidth="1" />
+                    <line x1="60" y1="60" x2="90" y2="90" stroke={C.black} strokeWidth="1" />
+                    <line x1="60" y1="90" x2="90" y2="60" stroke={C.black} strokeWidth="1" />
+                    <rect x="0" y="0" width="150" height="150" fill="none" stroke={C.black} strokeWidth="2" />
+
+                    {/* Arrows & Stars (dynamic colors) */}
+                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                        const vis = SLOT_VISUAL[slot];
+                        return (
+                            <React.Fragment key={`icons-${slot}`}>
+                                <SVGArrow cx={vis.arrowCx} cy={vis.arrowCy} rot={vis.arrowRot} color={slotColor[slot]} />
+                                <SVGStar cx={vis.starCx} cy={vis.starCy} />
+                            </React.Fragment>
+                        );
+                    })}
+
+                    {/* Group active pawns by position for stacking */}
+                    {(() => {
+                        const cellGroups: Record<number, Pawn[]> = {};
+                        const basePawns: Pawn[] = [];
+
+                        pawns.forEach(p => {
+                            if (p.status === "finished") return;
+                            if (p.status === "base") {
+                                basePawns.push(p);
+                            } else if (p.position !== null) {
+                                if (!cellGroups[p.position]) cellGroups[p.position] = [];
+                                cellGroups[p.position].push(p);
                             }
+                        });
 
+                        const renderedPawns: React.ReactNode[] = [];
+
+                        // Render base pawns
+                        basePawns.forEach(pawn => {
+                            const pos = getPawnPosition(pawn, cfg);
+                            if (!pos) return;
+                            const [cx, cy] = pos;
                             renderedPawns.push(
                                 <SVGPion
                                     key={pawn.id}
@@ -275,18 +242,53 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                                     color={C[pawn.owner]}
                                     clickable={isHumanTurn && movablePawnIds.includes(pawn.id)}
                                     selected={pawn.id === selectedPawnId}
-                                    scale={scale}
-                                    offset={[offsetX, offsetY]}
                                     onClick={() => onPawnClick(pawn.id)}
-                                    onMouseEnter={() => setHoveredCell(cellId)}
-                                    onMouseLeave={() => setHoveredCell(null)}
                                 />
                             );
                         });
-                    });
 
-                    return renderedPawns;
-                })()}
+                        // Render stacked pawns
+                        Object.entries(cellGroups).forEach(([cellStr, group]) => {
+                            const cellId = parseInt(cellStr);
+                            const pos = CELL_COORDS[cellId];
+                            if (!pos) return;
+
+                            const [cx, cy] = pos;
+                            const groupSize = group.length;
+                            const scale = groupSize > 1 ? 0.7 : 1;
+
+                            group.forEach((pawn, idx) => {
+                                let offsetX = 0;
+                                let offsetY = 0;
+                                if (groupSize > 1) {
+                                    // Simple grid offset for stacks
+                                    const offsets = [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 0]];
+                                    offsetX = (offsets[idx % 5][0]);
+                                    offsetY = (offsets[idx % 5][1]);
+                                }
+
+                                renderedPawns.push(
+                                    <SVGPion
+                                        key={pawn.id}
+                                        id={pawn.id}
+                                        cx={cx}
+                                        cy={cy - 1}
+                                        color={C[pawn.owner]}
+                                        clickable={isHumanTurn && movablePawnIds.includes(pawn.id)}
+                                        selected={pawn.id === selectedPawnId}
+                                        scale={scale}
+                                        offset={[offsetX, offsetY]}
+                                        onClick={() => onPawnClick(pawn.id)}
+                                        onMouseEnter={() => setHoveredCell(cellId)}
+                                        onMouseLeave={() => setHoveredCell(null)}
+                                    />
+                                );
+                            });
+                        });
+
+                        return renderedPawns;
+                    })()}
+                </g>
 
                 {/* Stacking Tooltip Overlay */}
                 {hoveredCell !== null && (() => {
