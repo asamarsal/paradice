@@ -2,7 +2,7 @@
 
 import React from "react";
 import {
-    GameState, Pawn, PlayerColor, SlotConfig,
+    GameState, Pawn,
     CELL_COORDS, BuiltGameConfig
 } from "@/types/ludo";
 
@@ -48,19 +48,15 @@ function SVGPion({ cx, cy, color, id, clickable, selected, scale = 1, offset = [
             onMouseLeave={onMouseLeave}
             style={{ cursor: clickable ? "pointer" : "default" }}
         >
-            {/* Glow ring when selected/clickable */}
             {selected && <circle cx={0} cy={-6} r={7} fill="none" stroke="gold" strokeWidth="2" opacity="0.9" />}
             {clickable && !selected && <circle cx={0} cy={-6} r={6} fill="rgba(255,255,255,0.4)" stroke="gold" strokeWidth="1" opacity="0.7"><animate attributeName="r" values="5.5;7;5.5" dur="1.2s" repeatCount="indefinite" /></circle>}
 
-            {/* Outer border & white padding (Slightly smaller: 4.5 -> 3.8) */}
             <path d="M 0 0 Q -3.8 -4 -3.8 -8 A 3.8 3.8 0 1 1 3.8 -8 Q 3.8 -4 0 0 Z"
                 fill={C.white} stroke={C.black} strokeWidth="0.8" strokeLinejoin="round" />
 
-            {/* Colored Body (Slightly smaller: 3 -> 2.5) */}
             <path d="M 0 -1.2 Q -2.5 -4 -2.5 -8 A 2.5 2.5 0 1 1 2.5 -8 Q 2.5 -4 0 -1.2 Z"
                 fill={color} stroke={C.black} strokeWidth="0.5" />
 
-            {/* Glossy Highlights */}
             <circle cx="-1" cy="-8.5" r="0.9" fill={C.white} />
             <circle cx="-2" cy="-7.5" r="0.4" fill={C.white} />
         </g>
@@ -72,7 +68,6 @@ function HomeBase({ x, y, color, baseName }: { x: number; y: number; color: stri
         <g id={`base-${baseName}`}>
             <rect x={x} y={y} width="60" height="60" fill={color} />
             <rect x={x + 10} y={y + 10} width="40" height="40" fill={C.white} stroke={C.black} strokeWidth="1" />
-            {/* Starting Slots (empty circles) */}
             <circle cx={x + 20} cy={y + 20} r="6" fill={color} stroke={C.black} strokeWidth="1" />
             <circle cx={x + 40} cy={y + 20} r="6" fill={color} stroke={C.black} strokeWidth="1" />
             <circle cx={x + 20} cy={y + 40} r="6" fill={color} stroke={C.black} strokeWidth="1" />
@@ -81,15 +76,13 @@ function HomeBase({ x, y, color, baseName }: { x: number; y: number; color: stri
     );
 }
 
-// ─── Slot layout data (fixed board positions) ────────────────────────────────
 const SLOT_VISUAL = {
-    TL: { baseX: 0, baseY: 0, laneRect: { x: 10, y: 70, w: 50, h: 10 }, startRect: { x: 10, y: 60, w: 10, h: 10 }, arrowCx: 5, arrowCy: 75, arrowRot: 0, starCx: 25, starCy: 85, trianglePoints: "60,60 60,90 75,75", homeSlots: [[20, 20], [40, 20], [20, 40], [40, 40]] },
-    TR: { baseX: 90, baseY: 0, laneRect: { x: 70, y: 10, w: 10, h: 50 }, startRect: { x: 80, y: 10, w: 10, h: 10 }, arrowCx: 75, arrowCy: 5, arrowRot: 90, starCx: 65, starCy: 25, trianglePoints: "60,60 90,60 75,75", homeSlots: [[110, 20], [130, 20], [110, 40], [130, 40]] },
-    BL: { baseX: 0, baseY: 90, laneRect: { x: 70, y: 90, w: 10, h: 50 }, startRect: { x: 60, y: 130, w: 10, h: 10 }, arrowCx: 75, arrowCy: 145, arrowRot: -90, starCx: 85, starCy: 125, trianglePoints: "60,90 90,90 75,75", homeSlots: [[20, 110], [40, 110], [20, 130], [40, 130]] },
-    BR: { baseX: 90, baseY: 90, laneRect: { x: 90, y: 70, w: 50, h: 10 }, startRect: { x: 130, y: 80, w: 10, h: 10 }, arrowCx: 145, arrowCy: 75, arrowRot: 180, starCx: 125, starCy: 65, trianglePoints: "90,60 90,90 75,75", homeSlots: [[110, 110], [130, 110], [110, 130], [130, 130]] },
+    TL: { baseX: 0, baseY: 0, laneRect: { x: 10, y: 70, w: 50, h: 10 }, startRect: { x: 10, y: 60, w: 10, h: 10 }, arrowCx: 5, arrowCy: 75, arrowRot: 0, starCx: 25, starCy: 85, trianglePoints: "60,60 60,90 75,75" },
+    TR: { baseX: 90, baseY: 0, laneRect: { x: 70, y: 10, w: 10, h: 50 }, startRect: { x: 80, y: 10, w: 10, h: 10 }, arrowCx: 75, arrowCy: 5, arrowRot: 90, starCx: 65, starCy: 25, trianglePoints: "60,60 90,60 75,75" },
+    BL: { baseX: 0, baseY: 90, laneRect: { x: 70, y: 90, w: 10, h: 50 }, startRect: { x: 60, y: 130, w: 10, h: 10 }, arrowCx: 75, arrowCy: 145, arrowRot: -90, starCx: 85, starCy: 125, trianglePoints: "60,90 90,90 75,75" },
+    BR: { baseX: 90, baseY: 90, laneRect: { x: 90, y: 70, w: 50, h: 10 }, startRect: { x: 130, y: 80, w: 10, h: 10 }, arrowCx: 145, arrowCy: 75, arrowRot: 180, starCx: 125, starCy: 65, trianglePoints: "90,60 90,90 75,75" },
 };
 
-// ─── Board Component ─────────────────────────────────────────────────────────
 interface LudoBoardProps {
     gameState: GameState;
     cfg: BuiltGameConfig;
@@ -111,10 +104,9 @@ function getPawnPosition(pawn: Pawn, cfg: BuiltGameConfig): [number, number] | n
 }
 
 export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick }: LudoBoardProps) {
-    const { pawns, currentPlayer, selectedPawnId } = gameState;
+    const { pawns, currentPlayer, pendingPlayer, selectedPawnId } = gameState;
     const [hoveredCell, setHoveredCell] = React.useState<number | null>(null);
 
-    // ── Grid lines ───────────────────────────────────────────────────────────
     const gridLines = [];
     for (let i = 70; i <= 80; i += 10) {
         gridLines.push(<line key={`vt${i}`} x1={i} y1="0" x2={i} y2="60" stroke={C.black} strokeWidth="0.5" />);
@@ -137,25 +129,48 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
         gridLines.push(<line key={`hr${i}`} x1="90" y1={i} x2="150" y2={i} stroke={C.black} strokeWidth="0.5" />);
     }
 
-    // ── Build slot→color lookup from config ──────────────────────────────────
     const slotColor: Record<string, string> = {};
     for (const sc of cfg.players) {
         slotColor[sc.slot] = C[sc.color];
     }
 
-    const isHumanTurn = cfg.players.find(p => p.color === currentPlayer)?.type === "human";
-    const activePawns = pawns.filter(p => p.status !== "finished");
+    const isHumanTurn = cfg.players.find((p) => p.color === currentPlayer)?.type === "human";
 
     return (
         <div className="w-full aspect-square relative max-w-[800px] mx-auto p-4 flex items-center justify-center">
-            {/* Player labels */}
-            {cfg.players.filter(p => p.active).map(p => {
-                const vis = SLOT_VISUAL[p.slot];
-                const top = p.slot === "TL" || p.slot === "TR" ? "top-0" : "bottom-0";
-                const left = p.slot === "TL" || p.slot === "BL" ? "left-4" : "right-4";
+            {cfg.players.filter((p) => p.active).map((p) => {
+                const top = p.slot === "TL" || p.slot === "TR" ? "top-[-10px]" : "bottom-[-10px]";
+                const left = p.slot === "TL" || p.slot === "BL" ? "left-3" : "right-3";
+                const isActive = p.color === currentPlayer;
+                const isPending = p.color === pendingPlayer;
                 return (
-                    <div key={p.color} className={`absolute ${top} ${left} text-sm font-bold`} style={{ color: C[p.color] }}>
-                        {p.label} {p.type === "bot" ? "🤖" : "👤"}
+                    <div
+                        key={p.color}
+                        className={`absolute z-20 ${top} ${left} rounded-full border px-3 py-1.5 text-sm font-bold transition-all ${
+                            isActive
+                                ? "scale-105 border-white bg-white/95 ring-4 ring-white/60"
+                                : isPending
+                                    ? "border-white/90 bg-white/80"
+                                    : "border-transparent bg-transparent"
+                        }`}
+                        style={{
+                            color: C[p.color],
+                            boxShadow: isActive ? `0 0 0 3px ${C[p.color]}55, 0 12px 24px rgba(15, 23, 42, 0.15)` : undefined,
+                        }}
+                    >
+                        <div className="flex items-center gap-2">
+                            <span>{p.label}</span>
+                            {isActive && (
+                                <span className="rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-white" style={{ backgroundColor: C[p.color] }}>
+                                    Turn
+                                </span>
+                            )}
+                            {!isActive && isPending && (
+                                <span className="rounded-full bg-slate-900/75 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                                    Next
+                                </span>
+                            )}
+                        </div>
                     </div>
                 );
             })}
@@ -164,8 +179,7 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                 <g transform="translate(5, 12)">
                     <rect x="0" y="0" width="150" height="150" fill={C.white} />
 
-                    {/* Home lane colored strips + start cell highlights (dynamic per mode) */}
-                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                    {(["TL", "TR", "BL", "BR"] as const).map((slot) => {
                         const vis = SLOT_VISUAL[slot];
                         const col = slotColor[slot];
                         return (
@@ -178,20 +192,62 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
 
                     {gridLines}
 
-                    {/* Home bases (dynamic colors) */}
-                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                    {(["TL", "TR", "BL", "BR"] as const).map((slot) => {
                         const vis = SLOT_VISUAL[slot];
-                        const sc = cfg.players.find(p => p.slot === slot)!;
+                        const sc = cfg.players.find((p) => p.slot === slot)!;
+                        const isActive = sc.color === currentPlayer;
+                        const isPending = sc.color === pendingPlayer;
+
+                        if (!isActive && !isPending) return null;
+
+                        return (
+                            <g key={`base-highlight-${slot}`} pointerEvents="none">
+                                <rect
+                                    x={vis.baseX}
+                                    y={vis.baseY}
+                                    width="60"
+                                    height="60"
+                                    rx="4"
+                                    fill={isActive ? `${C[sc.color]}30` : `${C[sc.color]}18`}
+                                    opacity={isActive ? "1" : "0.7"}
+                                />
+                                <rect
+                                    x={vis.baseX + 4}
+                                    y={vis.baseY + 4}
+                                    width="52"
+                                    height="52"
+                                    rx="4"
+                                    fill="none"
+                                    stroke={C[sc.color]}
+                                    strokeWidth={isActive ? "2.2" : "1.2"}
+                                    opacity={isActive ? "0.9" : "0.4"}
+                                />
+                                <rect
+                                    x={vis.baseX + 10}
+                                    y={vis.baseY + 10}
+                                    width="40"
+                                    height="40"
+                                    rx="3"
+                                    fill="none"
+                                    stroke={isActive ? C.white : C[sc.color]}
+                                    strokeWidth={isActive ? "1.2" : "0.7"}
+                                    opacity={isActive ? "0.75" : "0.25"}
+                                />
+                            </g>
+                        );
+                    })}
+
+                    {(["TL", "TR", "BL", "BR"] as const).map((slot) => {
+                        const vis = SLOT_VISUAL[slot];
+                        const sc = cfg.players.find((p) => p.slot === slot)!;
                         return <HomeBase key={slot} x={vis.baseX} y={vis.baseY} color={C[sc.color]} baseName={sc.color} />;
                     })}
 
-                    {/* Center triangles (dynamic colors) */}
-                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                    {(["TL", "TR", "BL", "BR"] as const).map((slot) => {
                         const vis = SLOT_VISUAL[slot];
                         return <polygon key={`tri-${slot}`} points={vis.trianglePoints} fill={slotColor[slot]} stroke={C.black} strokeWidth="0.5" />;
                     })}
 
-                    {/* Borders */}
                     <line x1="60" y1="0" x2="60" y2="150" stroke={C.black} strokeWidth="1" />
                     <line x1="90" y1="0" x2="90" y2="150" stroke={C.black} strokeWidth="1" />
                     <line x1="0" y1="60" x2="150" y2="60" stroke={C.black} strokeWidth="1" />
@@ -200,8 +256,7 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                     <line x1="60" y1="90" x2="90" y2="60" stroke={C.black} strokeWidth="1" />
                     <rect x="0" y="0" width="150" height="150" fill="none" stroke={C.black} strokeWidth="2" />
 
-                    {/* Arrows & Stars (dynamic colors) */}
-                    {(["TL", "TR", "BL", "BR"] as const).map(slot => {
+                    {(["TL", "TR", "BL", "BR"] as const).map((slot) => {
                         const vis = SLOT_VISUAL[slot];
                         return (
                             <React.Fragment key={`icons-${slot}`}>
@@ -211,12 +266,11 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                         );
                     })}
 
-                    {/* Group active pawns by position for stacking */}
                     {(() => {
                         const cellGroups: Record<number, Pawn[]> = {};
                         const basePawns: Pawn[] = [];
 
-                        pawns.forEach(p => {
+                        pawns.forEach((p) => {
                             if (p.status === "finished") return;
                             if (p.status === "base") {
                                 basePawns.push(p);
@@ -228,8 +282,7 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
 
                         const renderedPawns: React.ReactNode[] = [];
 
-                        // Render base pawns
-                        basePawns.forEach(pawn => {
+                        basePawns.forEach((pawn) => {
                             const pos = getPawnPosition(pawn, cfg);
                             if (!pos) return;
                             const [cx, cy] = pos;
@@ -247,7 +300,6 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                             );
                         });
 
-                        // Render stacked pawns
                         Object.entries(cellGroups).forEach(([cellStr, group]) => {
                             const cellId = parseInt(cellStr);
                             const pos = CELL_COORDS[cellId];
@@ -261,10 +313,9 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                                 let offsetX = 0;
                                 let offsetY = 0;
                                 if (groupSize > 1) {
-                                    // Simple grid offset for stacks
                                     const offsets = [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 0]];
-                                    offsetX = (offsets[idx % 5][0]);
-                                    offsetY = (offsets[idx % 5][1]);
+                                    offsetX = offsets[idx % 5][0];
+                                    offsetY = offsets[idx % 5][1];
                                 }
 
                                 renderedPawns.push(
@@ -290,9 +341,8 @@ export default function LudoBoard({ gameState, cfg, movablePawnIds, onPawnClick 
                     })()}
                 </g>
 
-                {/* Stacking Tooltip Overlay */}
                 {hoveredCell !== null && (() => {
-                    const group = pawns.filter(p => p.position === hoveredCell && p.status !== "base" && p.status !== "finished");
+                    const group = pawns.filter((p) => p.position === hoveredCell && p.status !== "base" && p.status !== "finished");
                     if (group.length <= 1) return null;
 
                     const [cx, cy] = CELL_COORDS[hoveredCell] || [0, 0];

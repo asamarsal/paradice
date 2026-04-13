@@ -18,10 +18,12 @@ export interface Pawn {
 export interface GameState {
     pawns: Pawn[];
     currentPlayer: PlayerColor;
+    pendingPlayer: PlayerColor | null;
     diceValue: number | null;
+    lastRolledValue: number | null;
     diceRolled: boolean;
     selectedPawnId: string | null;
-    phase: "waiting_roll" | "waiting_move" | "bot_thinking" | "bot_moving" | "game_over";
+    phase: "waiting_roll" | "waiting_move" | "bot_thinking" | "bot_moving" | "moving" | "turn_transition" | "game_over";
     winner: PlayerColor | null;
     message: string;
 }
@@ -133,8 +135,8 @@ export function buildGameConfig(mode: GameMode): BuiltGameConfig {
     const homePositions = {} as Record<PlayerColor, [number, number][]>;
     const turnOrder: PlayerColor[] = [];
 
-    // Turn order follows slot order: TL → TR → BL → BR (clockwise-ish)
-    const slotOrder: BoardSlot[] = ["TL", "TR", "BR", "BL"]; // clockwise
+    // Turn order: BL first (human), then clockwise
+    const slotOrder: BoardSlot[] = ["BL", "TR", "TL", "BR"]; // BL=human first
     for (const s of slotOrder) {
         const sc = slots.find(sl => sl.slot === s)!;
         const path = SLOT_PATHS[sc.slot];

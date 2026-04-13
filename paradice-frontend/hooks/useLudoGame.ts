@@ -57,7 +57,9 @@ export function useLudoGame(mode: GameMode = "2player") {
         return {
             pawns,
             currentPlayer: first,
+            pendingPlayer: null,
             diceValue: null,
+            lastRolledValue: null,
             diceRolled: false,
             selectedPawnId: null,
             phase: firstPlayer?.type === "human" ? "waiting_roll" : "bot_thinking",
@@ -67,6 +69,24 @@ export function useLudoGame(mode: GameMode = "2player") {
     }, [cfg]);
 
     const [state, setState] = useState<GameState>(createInitialState);
+
+    const queueTurnTransition = useCallback((
+        prev: GameState,
+        nextPlayer: PlayerColor,
+        message: string,
+        pawns: Pawn[] = prev.pawns
+    ): GameState => {
+        return {
+            ...prev,
+            pawns,
+            pendingPlayer: nextPlayer,
+            diceValue: null,
+            diceRolled: false,
+            selectedPawnId: null,
+            phase: "turn_transition",
+            message,
+        };
+    }, []);
 
     // ── Valid moves ──────────────────────────────────────────────────────────
     const getValidMoves = useCallback((pawns: Pawn[], color: PlayerColor, diceValue: number) => {
@@ -103,8 +123,9 @@ export function useLudoGame(mode: GameMode = "2player") {
             let captureOccurred = false;
             let newPawns = prev.pawns.map(p => {
                 if (p.id === pawnId) {
-                    const { targetSteps, ...rest } = p;
-                    return rest; // Clear targetSteps
+                    const nextPawn = { ...p };
+                    delete nextPawn.targetSteps;
+                    return nextPawn; // Clear targetSteps
                 }
                 return p;
             });
@@ -136,24 +157,24 @@ export function useLudoGame(mode: GameMode = "2player") {
                     ? `${isHumanCurrent ? "You" : "Bot"} rolled 6! Roll again.`
                     : `${isHumanCurrent ? "You" : "Bot"} captured! Roll again.`;
                 const nextPhase = "waiting_roll";
-                return { ...prev, pawns: newPawns, currentPlayer: nextPlayer, diceValue: null, diceRolled: false, selectedPawnId: null, phase: nextPhase, message: msg };
+                return {
+                    ...prev,
+                    pawns: newPawns,
+                    currentPlayer: nextPlayer,
+                    pendingPlayer: null,
+                    diceValue: null,
+                    diceRolled: false,
+                    selectedPawnId: null,
+                    phase: nextPhase,
+                    message: msg
+                };
             }
 
             nextPlayer = getNextPlayer(color, cfg.turnOrder);
-            const nextCfg = cfg.players.find(p => p.color === nextPlayer)!;
-            const nextIsHuman = nextCfg.type === "human";
-            return {
-                ...prev,
-                pawns: newPawns,
-                currentPlayer: nextPlayer,
-                diceValue: null,
-                diceRolled: false,
-                selectedPawnId: null,
-                phase: "waiting_roll",
-                message: nextIsHuman ? "Your turn! Hold the dice to roll." : "Bot's turn...",
-            };
+            const transitionMessage = isHumanCurrent ? "Move complete." : "Bot finished moving.";
+            return queueTurnTransition(prev, nextPlayer, transitionMessage, newPawns);
         });
-    }, [cfg]);
+    }, [cfg, queueTurnTransition]);
 
     const applyMove = useCallback((prevState: GameState, pawnId: string): GameState => {
         const dice = prevState.diceValue!;
@@ -175,7 +196,7 @@ export function useLudoGame(mode: GameMode = "2player") {
             return p;
         });
 
-        return { ...prevState, pawns: newPawns, phase: "bot_moving" }; // phase keeps interactions blocked
+        return { ...prevState, pawns: newPawns, phase: "moving" }; // phase keeps interactions blocked during animation
     }, [getValidMoves]);
 
     // ── Dice result handler (human) ──────────────────────────────────────────
@@ -188,32 +209,46 @@ export function useLudoGame(mode: GameMode = "2player") {
 
             if (validMoves.length === 0) {
                 const nextPlayer = value === 6 ? prev.currentPlayer : getNextPlayer(prev.currentPlayer, cfg.turnOrder);
-                const nextCfg = cfg.players.find(p => p.color === nextPlayer)!;
-                const nextIsHuman = nextCfg.type === "human";
+                if (nextPlayer !== prev.currentPlayer) {
+                    return queueTurnTransition(
+                        { ...prev, lastRolledValue: value },
+                        nextPlayer,
+                        "No moves."
+                    );
+                }
                 return {
                     ...prev,
                     currentPlayer: nextPlayer,
+                    pendingPlayer: null,
                     diceValue: null,
+                    lastRolledValue: value,
                     diceRolled: false,
                     phase: "waiting_roll",
-                    message: value === 6 ? "No moves available. Roll again!" : `No moves. ${nextIsHuman ? "Your turn!" : "Bot's turn..."}`,
+                    message: "No moves available. Roll again!",
                 };
             }
 
             // Auto-move if only 1 valid move
             if (validMoves.length === 1) {
-                const stateWithDice = { ...prev, diceValue: value, diceRolled: true, phase: "waiting_move" as const, message: "Moving..." };
+                const stateWithDice = {
+                    ...prev,
+                    diceValue: value,
+                    lastRolledValue: value,
+                    diceRolled: true,
+                    phase: "waiting_move" as const,
+                    message: "Moving..."
+                };
                 return applyMove(stateWithDice, validMoves[0].pawn.id);
             }
 
             // If it's a bot and several moves exist, go to bot_thinking to pick one
             if (isBot) {
-                return { ...prev, diceValue: value, diceRolled: true, phase: "bot_thinking" as const, message: "Bot is thinking..." };
+                return { ...prev, diceValue: value, lastRolledValue: value, diceRolled: true, phase: "bot_thinking" as const, message: "Bot is thinking..." };
             }
 
-            return { ...prev, diceValue: value, diceRolled: true, phase: "waiting_move" as const, message: "Choose a pawn to move." };
+            return { ...prev, diceValue: value, lastRolledValue: value, diceRolled: true, phase: "waiting_move" as const, message: "Choose a pawn to move." };
         });
-    }, [getValidMoves, applyMove, cfg]);
+    }, [getValidMoves, applyMove, cfg, queueTurnTransition]);
 
     // ── Pawn click handler (human) ───────────────────────────────────────────
     const handlePawnClick = useCallback((pawnId: string) => {
@@ -236,15 +271,22 @@ export function useLudoGame(mode: GameMode = "2player") {
 
             if (validMoves.length === 0) {
                 const nextPlayer = diceValue === 6 ? prev.currentPlayer : getNextPlayer(prev.currentPlayer, cfg.turnOrder);
-                const nextCfg = cfg.players.find(p => p.color === nextPlayer)!;
-                const nextIsHuman = nextCfg.type === "human";
+                if (nextPlayer !== prev.currentPlayer) {
+                    return queueTurnTransition(
+                        { ...prev, lastRolledValue: diceValue },
+                        nextPlayer,
+                        "Bot passed."
+                    );
+                }
                 return {
                     ...prev,
                     currentPlayer: nextPlayer,
+                    pendingPlayer: null,
                     diceValue: null,
+                    lastRolledValue: diceValue,
                     diceRolled: false,
                     phase: "waiting_roll",
-                    message: `Bot passed. ${nextIsHuman ? "Your turn!" : "Next bot..."}`,
+                    message: "Bot rolled 6 but has no moves. Rolling again.",
                 };
             }
 
@@ -261,13 +303,14 @@ export function useLudoGame(mode: GameMode = "2player") {
             return {
                 ...prev,
                 diceValue: diceValue,
+                lastRolledValue: diceValue,
                 diceRolled: true,
                 selectedPawnId: chosenMove.pawn.id,
                 phase: "bot_moving" as const,
                 message: `Bot rolled ${diceValue}.`,
             };
         });
-    }, [getValidMoves, cfg]);
+    }, [getValidMoves, cfg, queueTurnTransition]);
 
     // ── Bot execute move ─────────────────────────────────────────────────────
     const executeBotMove = useCallback(() => {
@@ -306,10 +349,35 @@ export function useLudoGame(mode: GameMode = "2player") {
         } else {
             const justFinished = state.pawns.find(p => p.targetSteps !== undefined && p.steps === p.targetSteps);
             if (justFinished) {
-                finalizeMove(justFinished.id);
+                const timer = setTimeout(() => {
+                    finalizeMove(justFinished.id);
+                }, 0);
+                return () => clearTimeout(timer);
             }
         }
     }, [state.pawns, stepForward, finalizeMove]);
+
+    useEffect(() => {
+        if (state.phase !== "turn_transition" || !state.pendingPlayer) return;
+
+        const timer = setTimeout(() => {
+            setState(prev => {
+                if (prev.phase !== "turn_transition" || !prev.pendingPlayer) return prev;
+
+                const nextPlayer = prev.pendingPlayer;
+                const nextCfg = cfg.players.find(p => p.color === nextPlayer)!;
+                return {
+                    ...prev,
+                    currentPlayer: nextPlayer,
+                    pendingPlayer: null,
+                    phase: "waiting_roll",
+                    message: nextCfg.type === "human" ? "Your turn! Hold the dice to roll." : "Bot's turn...",
+                };
+            });
+        }, 2000);
+
+        return () => clearTimeout(timer);
+    }, [state.phase, state.pendingPlayer, cfg]);
 
     // ── Reset ────────────────────────────────────────────────────────────────
     const resetGame = useCallback(() => setState(createInitialState()), [createInitialState]);

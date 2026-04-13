@@ -87,17 +87,12 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
         }
     };
 
-    // Sync rotation with value prop (ONLY for bots)
-    useEffect(() => {
-        if (isBot && externalValue && !isRolling) {
-            const target = getTargetOffset(externalValue);
-            setRotation({ x: target.x, y: target.y, z: 0 });
-        }
-    }, [externalValue, isRolling, isBot]);
+    // NOTE: Bot dice animation is triggered imperatively via rollDice() ref.
+    // No need to sync rotation with externalValue — that causes a second animation.
 
     // Fast rotation while holding
     useEffect(() => {
-        let interval: any;
+        let interval: ReturnType<typeof setInterval> | undefined;
         if (isHolding) {
             interval = setInterval(() => {
                 setRotation(prev => ({
@@ -138,7 +133,7 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
         rollDice: (forcedValue?: number) => rollDice(forcedValue)
     }));
 
-    const startHold = (e: React.MouseEvent | React.TouchEvent) => {
+    const startHold = () => {
         if (isRolling || disabled) return;
         setIsHolding(true);
     };
@@ -157,7 +152,7 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
                 onMouseLeave={finishHold}
                 onTouchStart={startHold}
                 onTouchEnd={finishHold}
-                onClick={(e) => {
+                onClick={() => {
                     // Prevent double-trigger from MouseUp and Click if already rolling
                     if (!isRollingRef.current && !isHolding && !disabled) {
                         rollDice();
@@ -190,7 +185,7 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
                 <span className="font-bold text-gray-700 uppercase tracking-widest text-sm text-center max-w-[150px]">
                     {isHolding ? "RELEASING..." : (isRolling ? "ROLLING..." : (message || "HOLD TO SPIN"))}
                 </span>
-                {!isRolling && !isHolding && value && (
+                {!isRolling && !isHolding && value !== null && value !== undefined && (
                     <span className="text-3xl font-black text-[#8B5CF6] mt-1">{value}</span>
                 )}
             </div>
