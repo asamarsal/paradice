@@ -1,11 +1,13 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import LudoBoard from "@/components/LudoBoard";
 import Dice, { DiceHandle } from "@/components/Dice";
+import Navbar from "@/components/Navbar";
 
 if (typeof globalThis.window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -617,7 +619,7 @@ function LeaderboardSection() {
       <div className="flex justify-center gap-2 mb-6">
         {(["weekly", "monthly"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`rounded-full px-5 py-2 text-sm font-black uppercase tracking-wider transition ${tab === t ? "bg-amber-400 text-black" : "border border-white/20 bg-white/10 text-white/60 hover:text-white"}`}>
+            className={`rounded-full px-5 py-2 text-sm font-black uppercase tracking-wider transition ${tab === t ? "bg-amber-400 text-white" : "border border-white/20 bg-white/10 text-white/60 hover:text-white"}`}>
             {t === "weekly" ? "⏳ Weekly" : "📅 Monthly"}
           </button>
         ))}
@@ -773,54 +775,57 @@ function CTAAndFooter() {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="w-full bg-[#1E1E1E] mt-12 relative z-20">
+    <div ref={containerRef} className="w-full bg-transparent mt-12 relative z-20">
       <section className="mx-auto w-full max-w-7xl px-4 py-16 md:px-8">
-        <div className="cta-box flex flex-col md:flex-row items-center justify-between gap-8 rounded-[2rem] bg-gradient-to-r from-[#F97316] to-[#EAB308] p-8 md:p-12 shadow-[0_20px_50px_rgba(249,115,22,0.3)]">
-          <div className="text-center md:text-left text-white">
-            <h2 className="text-3xl md:text-4xl font-black mb-2 drop-shadow-md">Siap untuk Petualangan Tropis?</h2>
-            <p className="text-white/90 font-medium text-lg drop-shadow-sm">Bergabunglah dengan ribuan pemain dan mulai menang hari ini!</p>
+        <div className="cta-box flex flex-col items-center justify-center text-center gap-8 rounded-[1.75rem] border border-white/10 bg-gradient-to-b from-white/5 to-white/[0.02] p-10 md:p-14 shadow-2xl backdrop-blur-3xl">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-[#F97316] to-[#EAB308] bg-clip-text text-transparent drop-shadow-sm">Siap untuk Petualangan Tropis?</h2>
+            <p className="text-white/60 font-medium text-lg leading-relaxed">Bergabunglah dengan ribuan pemain di Initia Blockchain dan mulai menangkan hadiah NFT eksklusif hari ini!</p>
           </div>
-          <button className="whitespace-nowrap rounded-full bg-white px-8 py-4 text-sm font-black uppercase tracking-widest text-[#F97316] shadow-xl transition hover:-translate-y-1 hover:shadow-2xl">
-            MAIN SEKARANG →
+          <button className="group relative overflow-hidden rounded-full border border-white/25 bg-gradient-to-r from-orange-500 via-orange-550 to-orange-600 px-10 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-all duration-300 hover:-translate-y-1 hover:brightness-110 hover:border-white/40">
+            <span className="relative z-10 text-base">MAIN SEKARANG →</span>
+            <div className="absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-20 bg-white" />
           </button>
         </div>
       </section>
 
-      <footer className="mx-auto w-full max-w-7xl px-4 pb-12 pt-8 md:px-8">
-        <div className="grid gap-10 md:grid-cols-4 md:gap-8">
-          <div className="footer-column">
-            <h3 className="text-2xl font-black text-[#F97316] mb-4">Paradise Ludo</h3>
-            <p className="text-slate-400 text-sm font-medium leading-relaxed">Main ludo secara on-chain dan menang dengan strategi. Dibangun secara aman di atas Initia Blockchain.</p>
+      <div className="bg-[#1e1e1e] w-full">
+        <footer className="mx-auto w-full max-w-7xl px-4 pb-12 pt-8 md:px-8">
+          <div className="grid gap-10 md:grid-cols-4 md:gap-8">
+            <div className="footer-column">
+              <h3 className="text-2xl font-black text-[#F97316] mb-4">Paradise Ludo</h3>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">Main ludo secara on-chain dan menang dengan strategi. Dibangun secara aman di atas Initia Blockchain.</p>
+            </div>
+            <div className="footer-column">
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">QUICK LINKS</h4>
+              <ul className="space-y-2 text-slate-400 text-sm font-medium">
+                <li><button className="hover:text-[#F97316] transition-colors">Home</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Leaderboard</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">My Stats</button></li>
+              </ul>
+            </div>
+            <div className="footer-column">
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">SUPPORT</h4>
+              <ul className="space-y-2 text-slate-400 text-sm font-medium">
+                <li><button className="hover:text-[#F97316] transition-colors">FAQ</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Terms of Service</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Privacy Policy</button></li>
+              </ul>
+            </div>
+            <div className="footer-column">
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">FOLLOW US</h4>
+              <ul className="space-y-2 text-slate-400 text-sm font-medium">
+                <li><button className="hover:text-[#F97316] transition-colors">Twitter/X</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Discord</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Medium</button></li>
+              </ul>
+            </div>
           </div>
-          <div className="footer-column">
-            <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">QUICK LINKS</h4>
-            <ul className="space-y-2 text-slate-400 text-sm font-medium">
-              <li><button className="hover:text-[#F97316] transition-colors">Home</button></li>
-              <li><button className="hover:text-[#F97316] transition-colors">Leaderboard</button></li>
-              <li><button className="hover:text-[#F97316] transition-colors">My Stats</button></li>
-            </ul>
+          <div className="mt-12 border-t border-white/10 pt-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            © 2026 Paradise Ludo. All Rights Reserved.
           </div>
-          <div className="footer-column">
-            <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">SUPPORT</h4>
-            <ul className="space-y-2 text-slate-400 text-sm font-medium">
-              <li><button className="hover:text-[#F97316] transition-colors">FAQ</button></li>
-              <li><button className="hover:text-[#F97316] transition-colors">Terms of Service</button></li>
-              <li><button className="hover:text-[#F97316] transition-colors">Privacy Policy</button></li>
-            </ul>
-          </div>
-          <div className="footer-column">
-            <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">FOLLOW US</h4>
-            <ul className="space-y-2 text-slate-400 text-sm font-medium">
-              <li><button className="hover:text-[#F97316] transition-colors">Twitter/X</button></li>
-              <li><button className="hover:text-[#F97316] transition-colors">Discord</button></li>
-              <li><button className="hover:text-[#F97316] transition-colors">Medium</button></li>
-            </ul>
-          </div>
-        </div>
-        <div className="mt-12 border-t border-white/10 pt-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-          © 2026 Paradise Ludo. All Rights Reserved.
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
@@ -922,31 +927,7 @@ export default function Home() {
   useGSAP(() => {
     if (!heroSectionRef.current) return;
 
-    // Slide left card out to the left
-    gsap.to(".card-left", {
-      x: -250,
-      opacity: 0,
-      ease: "power2.inOut",
-      scrollTrigger: {
-        trigger: heroSectionRef.current,
-        start: "top top", // when hero section is exactly at the top of viewport
-        end: "+=300", // finish animation after 300px of scrolling
-        scrub: 1, // smooth scrub effect
-      }
-    });
-
-    // Slide right card out to the right
-    gsap.to(".card-right", {
-      x: 250,
-      opacity: 0,
-      ease: "power2.inOut",
-      scrollTrigger: {
-        trigger: heroSectionRef.current,
-        start: "top top",
-        end: "+=300",
-        scrub: 1,
-      }
-    });
+    // (Animations for these cards were removed per user request to keep them static)
   }, { scope: heroSectionRef });
 
   if (activeSession) {
@@ -970,7 +951,7 @@ export default function Home() {
 
 
   return (
-    <div className="flex flex-col min-h-screen text-white">
+    <div className="flex flex-col min-h-screen text-white max-w-full overflow-x-hidden">
 
       {/* ── Video Background ── */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
@@ -988,60 +969,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(139,92,246,0.25),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(249,115,22,0.2),_transparent_50%)]" />
       </div>
 
-      <main className="relative flex-1">
-        {/* ─────────────── NAVBAR ─────────────── */}
-        <nav className="sticky top-0 z-50 px-4 pt-4 md:px-8">
-          <div className="mx-auto flex w-full max-w-7xl items-center justify-between rounded-2xl border border-white/15 bg-white/10 px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <img src="/icon/paradice-icon.png" alt="Paradice Icon" className="h-10 w-10 object-contain drop-shadow-md" />
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-300">Onchain Ludo</p>
-                <p className="text-base font-black text-white leading-none">Paradice</p>
-              </div>
-            </div>
 
-            {/* Nav links */}
-            <div className="hidden md:flex items-center gap-6">
-              {["Home", "Leaderboard", "How to Play", "About"].map((link) => (
-                <button
-                  key={link}
-                  className="text-sm font-semibold text-white/70 transition hover:text-white"
-                >
-                  {link}
-                </button>
-              ))}
-            </div>
-
-            {/* Right side */}
-            <div className="flex items-center gap-2 md:gap-3">
-              {/* Language Switcher */}
-              <button className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-black text-white hover:text-orange-300 backdrop-blur transition hover:bg-white/20 hover:border-white/30" title="Switch Language">
-                EN
-              </button>
-
-              {/* Music Toggle */}
-              <button className="hidden md:flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition hover:bg-white/20 hover:text-orange-300" title="Toggle Music">
-                🎵
-              </button>
-
-              {/* Profile */}
-              <button className="hidden md:flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition hover:bg-white/20 hover:text-orange-300" title="My Profile">
-                👤
-              </button>
-
-              {/* Balance */}
-              <div className="hidden rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-white backdrop-blur md:block">
-                💰 {formatUsd(dummyBalanceUsd)}
-              </div>
-
-              {/* Connect Wallet */}
-              <button className="rounded-full bg-gradient-to-r from-[#F97316] to-[#8B5CF6] px-5 py-2 text-sm font-black text-white shadow-lg shadow-orange-500/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/40">
-                Connect Wallet
-              </button>
-            </div>
-          </div>
-        </nav>
+      <main className="relative flex-1 overflow-x-hidden">
+        <Navbar balanceUsd={dummyBalanceUsd} />
 
         {/* ─────────────── HERO SECTION ─────────────── */}
         <section ref={heroSectionRef} className="mx-auto grid min-h-[calc(100vh-88px)] w-full max-w-7xl gap-8 px-4 pb-12 pt-10 md:px-8 lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12">
@@ -1064,7 +994,7 @@ export default function Home() {
             </p>
 
             {/* ── Bet Setup Card (glassmorphism) ── */}
-            <div className="card-left mt-8 rounded-[1.75rem] border border-white/15 bg-white/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+            <div id="play" className="mt-8 rounded-[1.75rem] border border-white/15 bg-white/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl">
               <p className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-300">💰 Dummy Bet Setup</p>
               <h3 className="mt-1 text-xl font-black text-white">Pilih taruhan sebelum match</h3>
 
@@ -1154,11 +1084,11 @@ export default function Home() {
             {/* <FloatingCoin /> */}
             {/* <FloatingDice /> */}
 
-            <img src="/icon/paradice-icon.png" alt="Paradice Icon" style={{ width: "380px", height: "380px", objectFit: "contain" }} />
+            <img src="/icon/paradice-icon.png" alt="Paradice Icon" style={{ width: "390px", height: "390px", objectFit: "contain" }} className="mx-auto drop-shadow-[0_0_30px_rgba(249,115,22,0.3)]" />
 
 
             {/* Mode selector card (glassmorphism) */}
-            <div className="card-right rounded-[1.75rem] border border-white/15 bg-white/10 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+            <div className="rounded-[1.75rem] border border-white/15 bg-white/10 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl">
               <p className="text-[10px] font-black uppercase tracking-[0.35em] text-purple-300">🎮 Choose Your Arena</p>
               <h3 className="mt-1 text-lg font-black text-white">Select Game Mode</h3>
 
@@ -1210,3 +1140,4 @@ export default function Home() {
     </div>
   );
 }
+
