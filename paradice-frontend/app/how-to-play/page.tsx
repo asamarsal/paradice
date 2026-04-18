@@ -1,85 +1,98 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import BackButton from '@/components/BackButton';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
+import { useLanguage } from '@/context/LanguageContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const rules = [
-    {
-        id: 'ringkasan',
-        title: 'Ringkasan Eksekutif',
-        content: 'Paradice mengikuti aturan dasar Ludo klasik:',
-        bullets: [
-            'Pada prinsipnya 2–4 pemain bergiliran searah jarum jam memindahkan keempat pionnya dari "rumah" ke kotak finish di tengah papan. Untuk keluar rumah diperlukan lemparan dadu 6 pertama kali.',
-            'Setiap kali pion lawan ditangkap (dengan mendarat di petaknya), pion lawan dikembalikan ke rumah.',
-            'Pemenang adalah pemain pertama yang memasukkan semua 4 pionnya ke finish.',
-            'Panduan ini menguraikan langkah-langkah lengkap, contoh situasi, FAQ, dan tips.'
-        ]
-    },
-    {
-        id: 'persiapan',
-        title: 'Persiapan Permainan',
-        content: 'Pemain: 2–4 orang, masing-masing memilih warna (Merah, Biru, Kuning, Hijau) dan menempatkan 4 pion di "rumah" awal berwarna.',
-        bullets: [
-            'Menentukan Giliran Awal: Biasanya tiap pemain melempar dadu sekali, giliran pertama adalah yang mendapatkan angka tertinggi. Setelahnya giliran berjalan searah jarum jam.',
-            'Tata Letak Papan: Papan berbentuk silang dengan 4 zona berwarna. Kotak pertama di masing-masing zona warna adalah titik keluar rumah, dan terdapat kotak bertanda bintang di jalur utama (zona aman).'
-        ]
-    },
-    {
-        id: 'dadu',
-        title: 'Urutan Giliran & Dadu',
-        content: 'Pada giliran, pemain melempar dadu sekali dan mengambil langkah sesuai angka dadu.',
-        bullets: [
-            'Jika pemain mendapat angka 6, ia boleh mengeluarkan pion baru dari rumah (jika ada) atau memindahkan pion yang sudah ada di jalur.',
-            'Setelah melempar 6, pemain mendapat giliran tambahan (melempar lagi).',
-            'Namun jika seorang pemain melempar angka 6 sebanyak tiga kali berturut-turut, giliran ketiga diabaikan dan giliran beralih ke pemain berikutnya.',
-            'Penting: pemain hanya boleh memilih satu pion (yang sudah keluar) untuk dipindahkan.'
-        ]
-    },
-    {
-        id: 'gerak',
-        title: 'Mengeluarkan & Memindahkan Pion',
-        content: 'Mengeluarkan Pion: Saat dadu menunjukkan 6, satu pion keluar dari rumah ke petak awal jalur berwarna masing-masing.',
-        bullets: [
-            'Memindahkan Pion: Setelah pion di jalur, pion bergerak searah jarum jam mengikuti jalurnya.',
-            'Memilih Pion: Pemain bebas memilih pion mana saja yang sudah di jalur, semua pion dapat bergerak.',
-            'Blok Ganda: Jika dua pion satu warna berada di petak sama, terbentuk blok ganda. Ini tidak bisa dilewati atau ditangkap oleh lawan.',
-            'Zona Aman (Bintang): Pion di zona berlambang bintang tidak bisa ditangkap oleh lawan.',
-            'Menangkap Pion: Mendarat tepat di petak dihuni lawan akan mengirim lawan ke rumah. Pemain lalu mendapat giliran tambahan.'
-        ]
-    },
-    {
-        id: 'finish',
-        title: 'Menuju Finish & Menang',
-        content: 'Setelah mengelilingi papan, pion akan memasuki kolom beranda (berwarna sama dengan pemain) menuju kotak finish.',
-        bullets: [
-            'Pemain harus melempar angka yang tepat untuk mencapai finish. Jika angka dadu lebih besar dari sisa langkah, pion diam.',
-            'Pemenang: Pemain pertama yang keempat pionnya mencapai kotak finish memenangkan permainan.',
-            'Jika ada pemain tersisa, mereka melanjutkan permainan untuk menentukan posisi selanjutnya.'
-        ]
-    },
-    {
-        id: 'skenario',
-        title: 'Contoh Skenario',
-        content: 'Beberapa contoh penerapan aturan secara langsung:',
-        bullets: [
-            'Menangkap: Misal Pion Merah di petak 10. Biru melempar 3 sehingga mendarat di petak 10. Merah langsung kembali ke rumah.',
-            'Zona Aman: Pion Biru berada di petak bintang (aman). Jika lawan mendarat disana, Biru tetap aman.',
-            'Blok Ganda: Dua pion Hijau menumpuk. Lawan harus memutar atau menunggu blokir pecah.',
-            'Lempar 6 Beruntun: Dua kali lempar 6 dapat ekstra jalan, tetapi lempar 6 kali ketiga (6,6,6) gilirannya hangus (berakhir instan).',
-            'Selesai Bersamaan: Pemain (X) yang secara aktif mencapai finish terlebih dahulu pada gilirannya menang atas (Y).'
-        ]
-    }
-];
-
 export default function HowToPlayPage() {
-    const [dummyBalanceUsd] = useState(62.90);
+    const { t } = useLanguage();
+    const [dummyBalanceUsd] = useState(62.9);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const rules = [
+        {
+            id: 'ringkasan',
+            title: t('hw_rule_1_title'),
+            content: t('hw_rule_1_content'),
+            bullets: [
+                t('hw_rule_1_b1'),
+                t('hw_rule_1_b2'),
+                t('hw_rule_1_b3'),
+                t('hw_rule_1_b4'),
+            ],
+            images: [
+                { src: '/image/howto/howto1.png', label: t('hw_rule_1_img1') },
+                { src: '/image/howto/howto2.png', label: t('hw_rule_1_img2') },
+                { src: '/image/howto/howto3.png', label: t('hw_rule_1_img3') },
+                { src: '/image/howto/howto4.png', label: t('hw_rule_1_img4') },
+            ]
+        },
+        {
+            id: 'persiapan',
+            title: t('hw_rule_2_title'),
+            content: t('hw_rule_2_content'),
+            bullets: [
+                t('hw_rule_2_b1'),
+                t('hw_rule_2_b2'),
+            ],
+            mainImage: '/image/howto/howto5.png'
+        },
+        {
+            id: 'dadu',
+            title: t('hw_rule_3_title'),
+            content: t('hw_rule_3_content'),
+            bullets: [
+                t('hw_rule_3_b1'),
+                t('hw_rule_3_b2'),
+                t('hw_rule_3_b3'),
+                t('hw_rule_3_b4'),
+            ],
+            mainImage: '/image/howto/howto6.png'
+        },
+        {
+            id: 'gerak',
+            title: t('hw_rule_4_title'),
+            content: t('hw_rule_4_content'),
+            bullets: [
+                t('hw_rule_4_b1'),
+                t('hw_rule_4_b2'),
+                t('hw_rule_4_b3'),
+                t('hw_rule_4_b4'),
+                t('hw_rule_4_b5'),
+            ],
+            mainImage: '/image/howto/howto7.png'
+        },
+        {
+            id: 'finish',
+            title: t('hw_rule_5_title'),
+            content: t('hw_rule_5_content'),
+            bullets: [
+                t('hw_rule_5_b1'),
+                t('hw_rule_5_b2'),
+                t('hw_rule_5_b3'),
+            ],
+            mainImage: '/image/howto/howto8.png'
+        },
+        {
+            id: 'skenario',
+            title: t('hw_rule_6_title'),
+            content: t('hw_rule_6_content'),
+            bullets: [
+                t('hw_rule_6_b1'),
+                t('hw_rule_6_b2'),
+                t('hw_rule_6_b3'),
+                t('hw_rule_6_b4'),
+                t('hw_rule_6_b5'),
+            ],
+            mainImage: '/image/howto/howto9.png'
+        }
+    ];
 
     useGSAP(() => {
         const steps = gsap.utils.toArray('.anim-step');
@@ -96,9 +109,9 @@ export default function HowToPlayPage() {
                     ease: "power3.out",
                     scrollTrigger: {
                         trigger: step,
-                        start: "top 85%", // When top of step hits 85% of viewport
-                        end: "bottom 15%", // When bottom of step goes past 15% of viewport
-                        toggleActions: "play reverse play reverse", // Animates in, animates out (disappears) when scrolling past, and comes back when scrolling up
+                        start: "top 85%",
+                        end: "bottom 15%",
+                        toggleActions: "play reverse play reverse",
                     }
                 }
             );
@@ -124,68 +137,222 @@ export default function HowToPlayPage() {
 
             <Navbar balanceUsd={dummyBalanceUsd} />
 
-            <main className="relative z-10 mx-auto max-w-4xl px-4 py-16 md:px-8">
+            <main className="relative z-10 mx-auto max-w-[1240px] px-4 pt-24 pb-16 md:px-8">
 
-                {/* Back Button */}
-                <div className="mb-10">
-                    <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-2 text-[11px] font-black uppercase tracking-widest text-[#fdf2d9] backdrop-blur-md transition hover:bg-white/20 shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        Back
-                    </Link>
-                </div>
+                {/* Header Section: Back Button + Title */}
+                <div className="mb-12">
+                    {/* Top Row: Back Button & Title */}
+                    <div className="relative flex items-center justify-center min-h-[44px] mb-2">
+                        <BackButton className="absolute left-0" noMargin />
 
-                {/* Header Title */}
-                <div className="text-center mb-24 drop-shadow-[0_0_25px_rgba(255,255,255,0.4)]">
-                    <h1 className="text-5xl font-black text-[#fdf2d9] tracking-[0.1em] uppercase mb-4 md:text-6xl" style={{ textShadow: "0px 4px 20px rgba(0,0,0,0.8)" }}>
-                        How To Play
-                    </h1>
-                    <p className="text-[#fdf2d9]/80 font-bold tracking-wide mt-2 text-lg drop-shadow-md">
-                        Panduan Bermain Paradice (Ludo Klasik)
-                    </p>
+                        {/* Centered Title */}
+                        <h1 className="text-5xl font-black text-[#fdf2d9] tracking-[0.1em] uppercase md:text-6xl text-center" style={{ textShadow: "0px 4px 20px rgba(0,0,0,0.8)" }}>
+                            {t('hw_title')}
+                        </h1>
+                    </div>
+
+                    {/* Bottom Row: Subtitle */}
+                    <div className="text-center">
+                        <p className="text-[#fdf2d9]/80 font-bold tracking-wide text-lg drop-shadow-md">
+                            {t('hw_subtitle')}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Stepper Container */}
                 <div className="flex flex-col gap-12 sm:gap-16 pb-32">
-                    {rules.map((rule, idx) => (
-                        <div key={rule.id} className="anim-step opacity-0">
-                            {/* Parchment Box */}
-                            <div className="relative rounded-2xl bg-gradient-to-br from-[#fdf2d9] to-[#e4cd9b] p-8 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] border-4 border-[#8B4513]/30">
-
-                                {/* Grunge overlay texture for vintage feel */}
-                                <div className="absolute inset-0 opacity-10 bg-[url('/icon/paradice-icon.png')] bg-repeat mix-blend-overlay pointer-events-none rounded-xl" style={{ backgroundSize: "150px" }} />
-
-                                <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start">
-
-                                    {/* Round Step Number */}
-                                    <div className="flex-shrink-0 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-[#8B4513] text-2xl font-black text-white shadow-inner border-4 border-[#fdf2d9] drop-shadow-lg">
-                                        {idx + 1}
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex-1">
-                                        <h2 className="text-2xl md:text-3xl font-black text-[#5c2b0c] mb-3 tracking-tight">
-                                            {rule.title}
+                    {/* Step 1: Ringkasan Eksekutif */}
+                    <div className="anim-step opacity-0">
+                        <div className="relative rounded-[2.5rem] bg-gradient-to-br from-[#fef5e7] to-[#f2dac2] p-8 md:p-12 shadow-[0_30px_70px_rgba(0,0,0,0.7)] border-[6px] border-[#8a5d3b]/20">
+                            <div className="relative z-10 flex flex-col xl:flex-row gap-12 items-start">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-6 mb-8">
+                                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-[#8B4513] text-2xl font-black text-white shadow-inner border-4 border-[#fdf2d9] drop-shadow-xl">
+                                            1
+                                        </div>
+                                        <h2 className="text-3xl md:text-3xl font-black text-[#42210b] tracking-tight truncate">
+                                            {rules[0].title}
                                         </h2>
-
-                                        <p className="text-[#6d3e20] font-semibold text-sm md:text-base mb-6 leading-relaxed">
-                                            {rule.content}
-                                        </p>
-
-                                        <ul className="space-y-4 text-sm md:text-base font-medium text-[#4a2610]">
-                                            {rule.bullets.map((bullet, i) => (
-                                                <li key={i} className="flex items-start gap-3">
-                                                    <span className="mt-1 flex-shrink-0 text-[#8B4513]">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                                    </span>
-                                                    <span className="leading-relaxed opacity-90">{bullet}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                    </div>
+                                    <p className="text-[#6d3e20] font-bold text-lg mb-8 opacity-90 leading-relaxed">
+                                        {rules[0].content}
+                                    </p>
+                                    <ul className="space-y-6">
+                                        {rules[0].bullets.map((bullet, i) => (
+                                            <li key={`rule-0-b-${i}`} className="flex items-start gap-4">
+                                                <span className="mt-1 flex-shrink-0 text-[#8B4513]">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                </span>
+                                                <span className="text-[#4a2610] text-base md:text-lg font-bold leading-relaxed opacity-85">{bullet}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="w-full xl:w-[480px] shrink-0">
+                                    <div className="grid grid-cols-2 gap-4 md:gap-6">
+                                        {rules[0].images?.map((img, i) => (
+                                            <div key={`rule-0-img-${i}`} className="flex flex-col gap-2">
+                                                <p className="text-center text-xs font-black text-[#5c2b0c] uppercase tracking-wider">{img.label}</p>
+                                                <div className="aspect-square overflow-hidden rounded-2xl border-4 border-[#825530] shadow-2xl bg-white/10 group transition hover:scale-105 duration-300">
+                                                    <img src={img.src} alt={img.label} className="h-full w-full object-cover" />
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    ))}
+                    </div>
+
+                    {/* Step 2: Persiapan Permainan (Large Image Layout) */}
+                    <div className="anim-step opacity-0">
+                        <div className="relative rounded-[2.5rem] bg-gradient-to-br from-[#fef5e7] to-[#f2dac2] py-6 px-12 md:py-6 md:px-12 shadow-[0_30px_70px_rgba(0,0,0,0.7)] border-[6px] border-[#8a5d3b]/20">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-[#8B4513] text-2xl font-black text-white shadow-inner border-4 border-[#fdf2d9] drop-shadow-xl">
+                                    2
+                                </div>
+                                <h2 className="text-3xl md:text-3xl font-black text-[#42210b] tracking-tight uppercase">
+                                    {rules[1].title}
+                                </h2>
+                            </div>
+                            <div className="mb-6 overflow-hidden rounded-[2rem] border-[6px] border-[#825530] shadow-[0_20px_60px_rgba(0,0,0,0.5)] bg-black/10">
+                                <img src={rules[1].mainImage} className="w-full h-[300px] object-cover transition duration-1000 hover:scale-105" alt="Roll the Dice" />
+                            </div>
+                            <div className="space-y-6">
+                                <p className="text-[#6d3e20] font-bold text-lg md:text-xl leading-relaxed">{rules[1].content}</p>
+                                <ul className="space-y-4">
+                                    {rules[1].bullets.map((bullet, i) => (
+                                        <li key={`rule-1-b-${i}`} className="flex items-start gap-4">
+                                            <span className="mt-1 flex-shrink-0 text-[#8B4513]">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </span>
+                                            <span className="text-[#4a2610] text-base md:text-lg font-bold leading-relaxed opacity-85">{bullet}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 3: Urutan Giliran & Dadu (Large Image Layout) */}
+                    <div className="anim-step opacity-0">
+                        <div className="relative rounded-[2.5rem] bg-gradient-to-br from-[#fef5e7] to-[#f2dac2] py-6 px-12 md:py-6 md:px-12 shadow-[0_30px_70px_rgba(0,0,0,0.7)] border-[6px] border-[#8a5d3b]/20">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-[#8B4513] text-2xl font-black text-white shadow-inner border-4 border-[#fdf2d9] drop-shadow-xl">
+                                    3
+                                </div>
+                                <h2 className="text-3xl md:text-3xl font-black text-[#42210b] tracking-tight uppercase">
+                                    {rules[2].title}
+                                </h2>
+                            </div>
+                            <div className="mb-6 overflow-hidden rounded-[2rem] border-[6px] border-[#825530] shadow-[0_20px_60px_rgba(0,0,0,0.5)] bg-black/10 ">
+                                <img src={rules[2].mainImage} className="w-full h-[300px] object-cover transition duration-1000 hover:scale-105" alt="Roll the Dice" />
+                            </div>
+                            <div className="space-y-6">
+                                <p className="text-[#6d3e20] font-bold text-lg md:text-xl leading-relaxed">{rules[2].content}</p>
+                                <ul className="space-y-4">
+                                    {rules[2].bullets.map((bullet, i) => (
+                                        <li key={`rule-2-b-${i}`} className="flex items-start gap-4">
+                                            <span className="mt-1 flex-shrink-0 text-[#8B4513]">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </span>
+                                            <span className="text-[#4a2610] text-base md:text-lg font-bold leading-relaxed opacity-85">{bullet}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 4: Mengeluarkan & Memindahkan Pion (Large Image Layout) */}
+                    <div className="anim-step opacity-0">
+                        <div className="relative rounded-[2.5rem] bg-gradient-to-br from-[#fef5e7] to-[#f2dac2] py-6 px-12 md:py-6 md:px-12 shadow-[0_30px_70px_rgba(0,0,0,0.7)] border-[6px] border-[#8a5d3b]/20">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-[#8B4513] text-2xl font-black text-white shadow-inner border-4 border-[#fdf2d9] drop-shadow-xl">
+                                    4
+                                </div>
+                                <h2 className="text-3xl md:text-3xl font-black text-[#42210b] tracking-tight uppercase">
+                                    {rules[3].title}
+                                </h2>
+                            </div>
+                            <div className="mb-6 overflow-hidden rounded-[2rem] border-[6px] border-[#825530] shadow-[0_20px_60px_rgba(0,0,0,0.5)] bg-black/10 ">
+                                <img src={rules[3].mainImage} className="w-full h-[300px] object-cover transition duration-1000 hover:scale-105" alt="Pawn Movement" />
+                            </div>
+                            <div className="space-y-6">
+                                <p className="text-[#6d3e20] font-bold text-lg md:text-xl leading-relaxed">{rules[3].content}</p>
+                                <ul className="space-y-4">
+                                    {rules[3].bullets.map((bullet, i) => (
+                                        <li key={`rule-3-b-${i}`} className="flex items-start gap-4">
+                                            <span className="mt-1 flex-shrink-0 text-[#8B4513]">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </span>
+                                            <span className="text-[#4a2610] text-base md:text-lg font-bold leading-relaxed opacity-85">{bullet}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 5: Menuju Finish & Menang (Large Image Layout) */}
+                    <div className="anim-step opacity-0">
+                        <div className="relative rounded-[2.5rem] bg-gradient-to-br from-[#fef5e7] to-[#f2dac2] py-6 px-12 md:py-6 md:px-12 shadow-[0_30px_70px_rgba(0,0,0,0.7)] border-[6px] border-[#8a5d3b]/20">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-[#8B4513] text-2xl font-black text-white shadow-inner border-4 border-[#fdf2d9] drop-shadow-xl">
+                                    5
+                                </div>
+                                <h2 className="text-3xl md:text-3xl font-black text-[#42210b] tracking-tight uppercase">
+                                    {rules[4].title}
+                                </h2>
+                            </div>
+                            <div className="mb-6 overflow-hidden rounded-[2rem] border-[6px] border-[#825530] shadow-[0_20px_60px_rgba(0,0,0,0.5)] bg-black/10 ">
+                                <img src={rules[4].mainImage} className="w-full h-[300px] object-cover transition duration-1000 hover:scale-105" alt="Finish and Win" />
+                            </div>
+                            <div className="space-y-6">
+                                <p className="text-[#6d3e20] font-bold text-lg md:text-xl leading-relaxed">{rules[4].content}</p>
+                                <ul className="space-y-4">
+                                    {rules[4].bullets.map((bullet, i) => (
+                                        <li key={`rule-4-b-${i}`} className="flex items-start gap-4">
+                                            <span className="mt-1 flex-shrink-0 text-[#8B4513]">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </span>
+                                            <span className="text-[#4a2610] text-base md:text-lg font-bold leading-relaxed opacity-85">{bullet}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 6: Contoh Skenario (Large Image Layout) */}
+                    <div className="anim-step opacity-0">
+                        <div className="relative rounded-[2.5rem] bg-gradient-to-br from-[#fef5e7] to-[#f2dac2] py-6 px-12 md:py-6 md:px-12 shadow-[0_30px_70px_rgba(0,0,0,0.7)] border-[6px] border-[#8a5d3b]/20">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-[#8B4513] text-2xl font-black text-white shadow-inner border-4 border-[#fdf2d9] drop-shadow-xl">
+                                    6
+                                </div>
+                                <h2 className="text-3xl md:text-3xl font-black text-[#42210b] tracking-tight uppercase">
+                                    {rules[5].title}
+                                </h2>
+                            </div>
+                            <div className="mb-6 overflow-hidden rounded-[2rem] border-[6px] border-[#825530] shadow-[0_20px_60px_rgba(0,0,0,0.5)] bg-black/10 ">
+                                <img src={rules[5].mainImage} className="w-full h-[300px] object-cover transition duration-1000 hover:scale-105" alt="Scenario Examples" />
+                            </div>
+                            <div className="space-y-6">
+                                <p className="text-[#6d3e20] font-bold text-lg md:text-xl leading-relaxed">{rules[5].content}</p>
+                                <ul className="space-y-4">
+                                    {rules[5].bullets.map((bullet, i) => (
+                                        <li key={`rule-5-b-${i}`} className="flex items-start gap-4">
+                                            <span className="mt-1 flex-shrink-0 text-[#8B4513]">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </span>
+                                            <span className="text-[#4a2610] text-base md:text-lg font-bold leading-relaxed opacity-85">{bullet}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>

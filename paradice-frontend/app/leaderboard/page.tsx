@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import BackButton from '@/components/BackButton';
+import { useLanguage } from '@/context/LanguageContext';
 
 const formatUsd = (value: number) => `$${value.toFixed(2)}`;
 
@@ -33,8 +34,9 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 export default function LeaderboardPage() {
+    const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'allTime'>('weekly');
-    const [dummyBalanceUsd] = useState(62.90);
+    const [dummyBalanceUsd] = useState(62.9);
 
     const currentLeaderboard = leaderboardData[activeTab];
 
@@ -57,21 +59,12 @@ export default function LeaderboardPage() {
             <Navbar balanceUsd={dummyBalanceUsd} />
 
             {/* Main Content */}
-            <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8">
+            <main className="relative z-10 mx-auto max-w-7xl px-4 pt-24 pb-12 md:px-8">
 
-                {/* Back button */}
-                <div className="mb-6">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-white backdrop-blur transition hover:bg-white/20"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        Back
-                    </Link>
-                </div>
+                <BackButton />
 
-                <h1 className="mb-8 text-4xl font-black text-white md:text-5xl drop-shadow-xl">
-                    Leader<span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">board</span>
+                <h1 className="mb-8 text-4xl font-black text-white md:text-5xl drop-shadow-xl uppercase tracking-widest">
+                    {t('lb_title_1')}<span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">{t('lb_title_2')}</span>
                 </h1>
 
                 <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -82,50 +75,58 @@ export default function LeaderboardPage() {
                         {/* Tabs */}
                         <div className="flex gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-xl w-fit">
                             {[
-                                { id: 'weekly', label: 'WEEKLY' },
-                                { id: 'monthly', label: 'MONTHLY' },
-                                { id: 'allTime', label: 'ALL-TIME' },
-                            ].map((t) => (
+                                { id: 'weekly', label: t('lb_weekly') },
+                                { id: 'monthly', label: t('lb_monthly') },
+                                { id: 'allTime', label: t('lb_alltime') },
+                            ].map((tabItem) => (
                                 <button
-                                    key={t.id}
-                                    onClick={() => setActiveTab(t.id as any)}
-                                    className={`rounded-xl px-6 py-2.5 text-[11px] font-black uppercase tracking-widest transition ${activeTab === t.id
+                                    key={tabItem.id}
+                                    onClick={() => setActiveTab(tabItem.id as any)}
+                                    className={`rounded-xl px-6 py-2.5 text-[11px] font-black uppercase tracking-widest transition ${activeTab === tabItem.id
                                         ? 'bg-[#F97316] text-white shadow-lg shadow-orange-500/30'
                                         : 'text-white/40 hover:text-white/70 hover:bg-white/5'
                                         }`}
                                 >
-                                    {t.label}
+                                    {tabItem.label}
                                 </button>
                             ))}
                         </div>
 
                         <div className="flex flex-col gap-1">
-                            <p className="text-sm font-medium text-white/60">Climb the leaderboard to earn rewards!</p>
-                            <p className="text-xs font-bold text-orange-400/80 uppercase tracking-widest">Resets In: 4d 12h 25m</p>
+                            <p className="text-sm font-medium text-white/60">{t('lb_climb')}</p>
+                            <p className="text-xs font-bold text-orange-400/80 uppercase tracking-widest">{t('lb_resets')}: 4d 12h 25m</p>
                         </div>
 
                         {/* Table */}
                         <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl">
                             <div className="grid grid-cols-[80px_1fr_100px_100px_120px] gap-4 border-b border-white/10 bg-white/5 px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">
-                                <span>Rank</span>
-                                <span>Player</span>
-                                <span className="text-center">Wins</span>
-                                <span className="text-center">Winrate</span>
-                                <span className="text-right">Rewards</span>
+                                <span>{t('lb_rank')}</span>
+                                <span>{t('lb_player')}</span>
+                                <span className="text-center">{t('lb_wins')}</span>
+                                <span className="text-center">{t('lb_winrate')}</span>
+                                <span className="text-right">{t('lb_rewards')}</span>
                             </div>
 
                             <div className="flex flex-col">
                                 {currentLeaderboard.map((player) => (
                                     <div key={player.name} className="group grid grid-cols-[80px_1fr_100px_100px_120px] gap-4 items-center px-6 py-5 border-b border-white/5 transition hover:bg-white/[0.03]">
                                         <div className="flex items-center gap-3">
-                                            {player.rank <= 3 ? (
-                                                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-lg shadow-inner ${player.rank === 1 ? 'bg-gradient-to-br from-amber-200 to-amber-500 text-amber-900' :
-                                                    player.rank === 2 ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800' :
-                                                        'bg-gradient-to-br from-orange-300 to-orange-500 text-orange-950'
-                                                    }`}>
-                                                    {player.rank}
+                                            {player.rank === 1 && (
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full text-lg shadow-inner bg-gradient-to-br from-amber-200 to-amber-500 text-amber-900">
+                                                    1
                                                 </div>
-                                            ) : (
+                                            )}
+                                            {player.rank === 2 && (
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full text-lg shadow-inner bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800">
+                                                    2
+                                                </div>
+                                            )}
+                                            {player.rank === 3 && (
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full text-lg shadow-inner bg-gradient-to-br from-orange-300 to-orange-500 text-orange-950">
+                                                    3
+                                                </div>
+                                            )}
+                                            {player.rank > 3 && (
                                                 <span className="ml-3 font-black text-white/30">{player.rank}</span>
                                             )}
                                         </div>
@@ -159,7 +160,7 @@ export default function LeaderboardPage() {
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/20 border border-orange-500/30 text-xl overflow-hidden">
                                             👤
                                         </div>
-                                        <span className="font-bold text-white">TowerTraveler (You)</span>
+                                        <span className="font-bold text-white">TowerTraveler ({t('lb_you')})</span>
                                     </div>
                                     <span className="text-center font-black text-white/80">12</span>
                                     <span className="text-center font-black text-white/80">55%</span>
@@ -174,14 +175,14 @@ export default function LeaderboardPage() {
                         <div className="rounded-[2.5rem] border border-white/15 bg-white/[0.08] p-8 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
                             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-orange-400/5 to-transparent" />
 
-                            <h2 className="text-2xl font-black text-white text-center mb-8">Rewards</h2>
+                            <h2 className="text-2xl font-black text-white text-center mb-8">{t('lb_rewards')}</h2>
 
                             {/* Parchment-style scroll */}
                             <div className="relative mb-6">
                                 <div className="absolute inset-x-0 -top-4 h-8 bg-[#e8d5b5] rounded-full blur-xl opacity-20" />
                                 <div className="relative rounded-2xl bg-[#fdf2d9] p-6 shadow-2xl ring-4 ring-[#d8c3a5]">
                                     <h3 className="text-center text-[#8B4513] font-black uppercase tracking-widest text-sm mb-6 pb-2 border-b border-[#8B4513]/10">
-                                        Weekly Top 10
+                                        {t('lb_weekly_top')}
                                     </h3>
 
                                     <div className="flex flex-col gap-5">
@@ -195,13 +196,13 @@ export default function LeaderboardPage() {
                                                     <span className="text-3xl filter drop-shadow-md group-hover:scale-110 transition">{r.icon}</span>
                                                     <span className="font-black text-[#5d4037]">{r.amt}</span>
                                                 </div>
-                                                <span className="text-[10px] font-bold text-[#8d6e63] uppercase tracking-tighter">{r.level} Rank</span>
+                                                <span className="text-[10px] font-bold text-[#8d6e63] uppercase tracking-tighter">{r.level} {t('lb_rank_label')}</span>
                                             </div>
                                         ))}
 
                                         <div className="mt-4 pt-4 border-t border-[#8B4513]/10 text-center">
                                             <span className="inline-block px-4 py-1.5 rounded-full bg-[#8B4513]/5 text-[11px] font-black text-[#8B4513] uppercase">
-                                                Ranks #4-10 INIT
+                                                {t('lb_rewards_others')}
                                             </span>
                                         </div>
                                     </div>
@@ -217,7 +218,7 @@ export default function LeaderboardPage() {
                                     ))}
                                 </div>
                                 <p className="text-xs font-medium text-white/50 px-4 italic leading-relaxed">
-                                    "The higher you rank, the bigger the rewards! Top players share the weekly bounty pool."
+                                    "{t('lb_reward_desc')}"
                                 </p>
                             </div>
                         </div>
@@ -228,8 +229,8 @@ export default function LeaderboardPage() {
                             <div className="absolute inset-0 bg-gradient-to-t from-[#0f0c1a] to-transparent" />
                             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                                 <div className="text-5xl mb-3 filter drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]">🎁</div>
-                                <h4 className="text-sm font-black text-white uppercase tracking-widest">Extra Chests</h4>
-                                <p className="text-[10px] text-white/40 mt-1">Earn exclusive NFTs for your first win streak.</p>
+                                <h4 className="text-sm font-black text-white uppercase tracking-widest">{t('lb_extra_chests')}</h4>
+                                <p className="text-[10px] text-white/40 mt-1">{t('lb_extra_chests_desc')}</p>
                             </div>
                         </div>
                     </div>

@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useInterwovenKit } from '@initia/interwovenkit-react';
 
 interface NavbarProps {
     balanceUsd: number;
@@ -10,22 +13,35 @@ interface NavbarProps {
 
 export default function Navbar({ balanceUsd }: NavbarProps) {
     const pathname = usePathname();
+    const [isScrolled, setIsScrolled] = useState(false);
     const [showWalletInfo, setShowWalletInfo] = useState(false);
+    const { locale, setLocale, t } = useLanguage();
+    const { address, username, openWallet } = useInterwovenKit();
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const navLinks = [
-        { label: 'Home', href: '/' },
-        { label: 'Play', href: '/#play' },
-        { label: 'Marketplace', href: '/marketplace' },
-        { label: 'Leaderboard', href: '/leaderboard' },
-        { label: 'How to Play', href: '/how-to-play' },
-        { label: 'About', href: '#' },
+        { label: t('nav_home'), href: '/' },
+        { label: t('nav_play'), href: '/#play' },
+        { label: t('nav_marketplace'), href: '/marketplace' },
+        { label: t('nav_leaderboard'), href: '/leaderboard' },
+        { label: t('nav_howto'), href: '/how-to-play' },
+        { label: t('nav_about'), href: '#' },
     ];
 
     const formatUsd = (value: number) => `$${value.toFixed(2)}`;
 
     return (
-        <nav className="relative z-50 px-4 pt-4 md:px-8">
-            <div className="mx-auto flex w-full max-w-7xl items-center justify-between rounded-2xl border border-white/15 bg-white/10 px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+        <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${isScrolled ? 'pt-0 px-0' : 'pt-4 px-4 md:px-8'
+            }`}>
+            <div className={`mx-auto flex w-full items-center justify-between border-white/15 bg-white/10 px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-all duration-500 ease-in-out ${isScrolled ? 'max-w-none rounded-none border-b bg-white/15 py-4' : 'max-w-7xl rounded-2xl border'
+                }`}>
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 transition hover:opacity-80">
                     <img src="/icon/paradice-icon.png" alt="Paradice Icon" className="h-8 w-8 object-contain drop-shadow-md" />
@@ -56,8 +72,12 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                 <div className="flex items-center gap-5">
                     {/* UTILITIES GROUP (Settings) */}
                     <div className="hidden items-center gap-2 border-r border-white/10 pr-5 md:flex">
-                        <button className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[11px] font-bold text-white hover:text-orange-300 backdrop-blur transition hover:bg-white/20 hover:border-white/30" title="Switch Language">
-                            EN
+                        <button
+                            onClick={() => setLocale(locale === 'en' ? 'id' : 'en')}
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[11px] font-bold text-white hover:text-orange-300 backdrop-blur transition hover:bg-white/20 hover:border-white/30"
+                            title={locale === 'en' ? 'Ganti Bahasa' : 'Switch Language'}
+                        >
+                            {locale.toUpperCase()}
                         </button>
                         <button className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition hover:bg-white/20 hover:text-orange-300" title="Toggle Music">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
@@ -79,23 +99,23 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                             {/* Wallet Info Dropdown */}
                             {showWalletInfo && (
                                 <div className="absolute right-0 top-12 w-64 rounded-2xl border border-white/15 bg-white/20 p-4 shadow-2xl backdrop-blur-2xl transition-all animate-fade-in z-50">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Wallet Summary</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">{t('nav_wallet_summary')}</p>
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="text-white/50">Network</span>
+                                            <span className="text-white/50">{t('nav_network')}</span>
                                             <span className="text-white font-bold">Initia Testnet</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="text-white/50">Address</span>
+                                            <span className="text-white/50">{t('nav_address')}</span>
                                             <span className="text-white font-mono opacity-60">0x3kd...8fA2</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs border-t border-white/10 pt-2 mt-2">
-                                            <span className="text-white/50">Total Assets</span>
+                                            <span className="text-white/50">{t('nav_total_assets')}</span>
                                             <span className="text-emerald-400 font-bold">{formatUsd(balanceUsd)}</span>
                                         </div>
                                     </div>
                                     <button className="w-full mt-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition">
-                                        Manage Wallet
+                                        {t('nav_manage_wallet')}
                                     </button>
                                 </div>
                             )}
@@ -112,10 +132,28 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                             </button>
                         </Link>
 
-                        {/* Connect Wallet */}
-                        <button className="h-10 rounded-full bg-gradient-to-r from-[#F97316] to-[#EF4444] px-6 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-orange-500/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/40">
-                            Connect Wallet
-                        </button>
+                        {/* Connect Wallet - RainbowKit */}
+                        <ConnectButton.Custom>
+                            {({
+                                account,
+                                chain,
+                                openConnectModal,
+                                openAccountModal,
+                                mounted,
+                            }) => {
+                                const connected = mounted && account && chain;
+                                return (
+                                    <button
+                                        onClick={connected ? () => openWallet?.() : openConnectModal}
+                                        className="h-10 rounded-full bg-gradient-to-r from-[#F97316] to-[#EF4444] px-6 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-orange-500/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/40 whitespace-nowrap"
+                                    >
+                                        {connected
+                                            ? (username || `${account.address.slice(0, 6)}...${account.address.slice(-4)}`)
+                                            : t('nav_connect_wallet')}
+                                    </button>
+                                );
+                            }}
+                        </ConnectButton.Custom>
                     </div>
                 </div>
             </div>

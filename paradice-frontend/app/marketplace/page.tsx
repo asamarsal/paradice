@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import BackButton from '@/components/BackButton';
+import { useLanguage } from '@/context/LanguageContext';
 
 const nfts = [
     {
@@ -42,7 +44,7 @@ const nfts = [
         icon: '⚡',
         owner: '0x3kd....8fA2',
         priceInit: 160,
-        priceUsd: 34.40,
+        priceUsd: 34.4,
         tagColor: 'text-yellow-300 border-yellow-400/50',
     },
     {
@@ -72,7 +74,7 @@ const nfts = [
         icon: '⚡',
         owner: '0x3kd....8fA2',
         priceInit: 160,
-        priceUsd: 34.50,
+        priceUsd: 34.5,
         tagColor: 'text-yellow-300 border-yellow-400/50',
     },
     {
@@ -82,17 +84,19 @@ const nfts = [
         icon: '🎲',
         owner: '0x3kd....8fA2',
         priceInit: 160,
-        priceUsd: 34.40,
+        priceUsd: 34.4,
         tagColor: 'text-purple-300 border-purple-400/50',
     },
 ];
 
 export default function MarketplacePage() {
-    const [dummyBalanceUsd] = useState(62.90);
+    const { t } = useLanguage();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [dummyBalanceUsd] = useState(62.9);
     const [priceRange, setPriceRange] = useState(1200);
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[#0f0c1a] font-sans">
+        <div className="relative min-h-screen overflow-hidden bg-[#0f0c1a] font-sans" ref={containerRef}>
             {/* Background Video */}
             <div className="absolute inset-0 z-0">
                 <video
@@ -109,23 +113,17 @@ export default function MarketplacePage() {
 
             <Navbar balanceUsd={dummyBalanceUsd} />
 
-            <main className="relative z-10 mx-auto max-w-[1440px] px-4 py-8 md:px-8">
+            <main className="relative z-10 mx-auto max-w-[1440px] px-4 pt-24 pb-12 md:px-8">
 
-                {/* Back Link */}
-                <div className="mb-6">
-                    <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-2 text-[11px] font-black uppercase tracking-widest text-white backdrop-blur-md transition hover:bg-white/20">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        Back
-                    </Link>
-                </div>
+                <BackButton />
 
                 {/* Header Section */}
                 <div className="text-center mb-12">
                     <h1 className="text-5xl font-black text-white tracking-[0.1em] drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] uppercase">
-                        Marketplace
+                        {t('mkt_title')}
                     </h1>
                     <p className="mt-2 text-sm font-medium text-white/60 tracking-wide">
-                        Buy and sell exclusive minted NFTs!
+                        {t('mkt_desc')}
                     </p>
                 </div>
 
@@ -141,8 +139,9 @@ export default function MarketplacePage() {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                 </span>
                                 <input
+                                    id="search-input"
                                     type="text"
-                                    placeholder="Search"
+                                    placeholder={t('nav_search')}
                                     className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                                 />
                             </div>
@@ -150,17 +149,17 @@ export default function MarketplacePage() {
                             {/* Nav Categories */}
                             <div className="space-y-1 mb-6">
                                 <div className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 text-sm font-bold text-white">
-                                    <span>All</span>
+                                    <span>{t('mkt_all')}</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 </div>
-                                <div className="px-4 py-2 text-sm font-medium text-white/40 transition hover:text-white cursor-pointer">Owned</div>
-                                <div className="px-4 py-2 text-sm font-medium text-white/40 transition hover:text-white cursor-pointer">On Sale</div>
+                                <div className="px-4 py-2 text-sm font-medium text-white/40 transition hover:text-white cursor-pointer">{t('mkt_owned')}</div>
+                                <div className="px-4 py-2 text-sm font-medium text-white/40 transition hover:text-white cursor-pointer">{t('mkt_sale')}</div>
                             </div>
 
                             {/* Wallet Selector */}
                             <div className="mb-6">
-                                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-white/40">Wallet Address</label>
-                                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white backdrop-blur transition hover:bg-white/10 cursor-pointer">
+                                <label htmlFor="wallet-selector" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-white/40">{t('mkt_wallet')}</label>
+                                <div id="wallet-selector" className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white backdrop-blur transition hover:bg-white/10 cursor-pointer">
                                     <span className="opacity-80">0x3kd....8fA2</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </div>
@@ -169,14 +168,14 @@ export default function MarketplacePage() {
                             {/* Price Filter */}
                             <div className="mb-6">
                                 <div className="mb-4 flex items-center justify-between">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Filter by Harga (Price)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('mkt_filter_p')}</label>
                                 </div>
                                 <input
                                     type="range"
                                     min="1"
                                     max="1200"
                                     value={priceRange}
-                                    onChange={(e) => setPriceRange(parseInt(e.target.value))}
+                                    onChange={(e) => setPriceRange(Number.parseInt(e.target.value))}
                                     className="h-1.5 w-full appearance-none rounded-full bg-white/10 accent-orange-400 transition"
                                 />
                                 <div className="mt-3 flex items-center justify-between text-[11px] font-black text-orange-400">
@@ -188,13 +187,13 @@ export default function MarketplacePage() {
                             {/* More Filters */}
                             <div className="space-y-4 mb-8">
                                 <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:bg-white/10 cursor-pointer">
-                                    <span className="opacity-80 font-bold">All Rarities</span>
+                                    <span className="opacity-80 font-bold">{t('mkt_all')}</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </div>
                                 <div>
-                                    <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-white/40">Sort by</label>
-                                    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:bg-white/10 cursor-pointer">
-                                        <span className="opacity-80 font-bold">Newest</span>
+                                    <label htmlFor="sort-selector" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-white/40">{t('mkt_sort')}</label>
+                                    <div id="sort-selector" className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:bg-white/10 cursor-pointer">
+                                        <span className="opacity-80 font-bold">{t('mkt_new')}</span>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                     </div>
                                 </div>
@@ -202,7 +201,7 @@ export default function MarketplacePage() {
 
                             {/* Reset Button */}
                             <button className="w-full rounded-2xl bg-orange-500 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-orange-500/20 transition hover:-translate-y-1 hover:shadow-orange-500/40">
-                                Reset Filters
+                                {t('mkt_reset')}
                             </button>
 
                             {/* Treasure Decoration */}
@@ -222,7 +221,7 @@ export default function MarketplacePage() {
                         {/* Top Utility Bar */}
                         <div className="mb-8 flex items-center gap-4">
                             <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-6 py-2 text-xs font-bold text-white backdrop-blur-xl transition hover:bg-white/20 cursor-pointer">
-                                <span>All</span>
+                                <span>{t('mkt_all_cat')}</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             </div>
                         </div>
@@ -238,8 +237,9 @@ export default function MarketplacePage() {
                                     <div className={`mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/15 text-4xl shadow-lg shadow-black/40 transition group-hover:scale-110 duration-500 overflow-hidden relative`}>
                                         {/* Rarity ambient light */}
                                         <div className={`absolute inset-0 opacity-20 blur-xl ${nft.rarity === 'LEGENDARY' ? 'bg-orange-500' :
-                                                nft.rarity === 'EPIC' ? 'bg-purple-500' :
-                                                    nft.rarity === 'RARE' ? 'bg-blue-500' : 'bg-emerald-500'
+                                            nft.rarity === 'EPIC' ? 'bg-purple-500' :
+                                                nft.rarity === 'RARE' ? 'bg-blue-500' :
+                                                    'bg-emerald-500'
                                             }`} />
                                         <span className="relative z-10">{nft.icon}</span>
                                     </div>
@@ -268,7 +268,7 @@ export default function MarketplacePage() {
 
                                     {/* Buy Button */}
                                     <button className="w-full rounded-xl bg-gradient-to-r from-orange-400 to-orange-600 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg transition hover:-translate-y-1 hover:brightness-110 active:scale-95">
-                                        Buy
+                                        {t('mkt_buy_btn')}
                                     </button>
                                 </div>
                             ))}

@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -9,11 +8,11 @@ import LudoBoard from "@/components/LudoBoard";
 import Dice, { DiceHandle } from "@/components/Dice";
 import Navbar from "@/components/Navbar";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 if (typeof globalThis.window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
-import FloatingDice from "@/components/FloatingDice";
-import FloatingCoin from "@/components/FloatingCoin";
 import { useLudoGame } from "@/hooks/useLudoGame";
 import { GameMode } from "@/types/ludo";
 import {
@@ -31,24 +30,14 @@ type ModeOption = {
   details: string;
 };
 
-const MODE_OPTIONS: ModeOption[] = [
+const MODE_OPTIONS: any[] = [
   {
     mode: "2player",
-    title: "2 Players",
-    subtitle: "You vs Bot",
     accent: "from-[#2563EB] via-[#8B5CF6] to-[#22C55E]",
-    summary: "Duel cepat untuk langsung main.",
-    details:
-      "Satu pemain lawan satu bot dengan tempo lebih santai dan fokus ke strategi inti.",
   },
   {
     mode: "4player",
-    title: "4 Players",
-    subtitle: "You vs 3 Bots",
     accent: "from-[#F97316] via-[#EF4444] to-[#EAB308]",
-    summary: "Rame, chaos, dan penuh comeback.",
-    details:
-      "Tiga bot aktif membuat papan lebih hidup dengan lebih banyak block, capture, dan balas dendam.",
   },
 ];
 
@@ -110,6 +99,7 @@ function GameScreen({
   onGameSettled: (summary: SettlementSummary) => void;
   onRequestRematchStake: (stakeUsd: number, mode: GameMode) => Promise<{ ok: boolean; message?: string }>;
 }) {
+  const { t } = useLanguage();
   const {
     state,
     cfg,
@@ -339,8 +329,8 @@ function GameScreen({
                 }`}
             >
               {playerWon
-                ? `Kamu menang. +${formatUsd(winnerPayoutUsd)} masuk ke dummy balance.`
-                : `Kamu kalah ronde ini. Stake ${formatUsd(stakeUsd)} sudah jadi bagian pot.`}
+                ? t('bet_win_toast').replace('${amount}', formatUsd(winnerPayoutUsd))
+                : t('bet_lose_toast').replace('${amount}', formatUsd(stakeUsd))}
             </div>
           )}
         </section>
@@ -427,6 +417,7 @@ function GameScreen({
 }
 
 function StatsSection() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
 
   useGSAP(() => {
@@ -445,22 +436,22 @@ function StatsSection() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
         <div className="stat-card rounded-[1.5rem] bg-gradient-to-br from-[#FF7A45] to-[#FF4D4F] p-5 text-white shadow-lg transition hover:-translate-y-1 border border-white/20 backdrop-blur">
           <div className="mb-4 text-2xl">👥</div>
-          <p className="text-xs font-black uppercase tracking-widest text-white/85">Active Players</p>
+          <p className="text-xs font-black uppercase tracking-widest text-white/85">{t('st_active')}</p>
           <h4 className="mt-1 text-3xl font-black drop-shadow-md">12.5K</h4>
         </div>
         <div className="stat-card rounded-[1.5rem] bg-gradient-to-br from-[#06B6D4] to-[#10B981] p-5 text-white shadow-lg transition hover:-translate-y-1 border border-white/20 backdrop-blur">
           <div className="mb-4 text-2xl">🎮</div>
-          <p className="text-xs font-black uppercase tracking-widest text-white/85">Games Today</p>
+          <p className="text-xs font-black uppercase tracking-widest text-white/85">{t('st_today')}</p>
           <h4 className="mt-1 text-3xl font-black drop-shadow-md">48.2K</h4>
         </div>
         <div className="stat-card rounded-[1.5rem] bg-gradient-to-br from-[#F59E0B] to-[#EF4444] p-5 text-white shadow-lg transition hover:-translate-y-1 border border-white/20 backdrop-blur">
           <div className="mb-4 text-2xl">💰</div>
-          <p className="text-xs font-black uppercase tracking-widest text-white/85">Total Winnings</p>
+          <p className="text-xs font-black uppercase tracking-widest text-white/85">{t('st_total_win')}</p>
           <h4 className="mt-1 text-3xl font-black drop-shadow-md">$2.4M</h4>
         </div>
         <div className="stat-card rounded-[1.5rem] bg-gradient-to-br from-[#10B981] to-[#06B6D4] p-5 text-white shadow-lg transition hover:-translate-y-1 border border-white/20 backdrop-blur">
           <div className="mb-4 text-2xl">📈</div>
-          <p className="text-xs font-black uppercase tracking-widest text-white/85">Avg Win Rate</p>
+          <p className="text-xs font-black uppercase tracking-widest text-white/85">{t('st_win_rate')}</p>
           <h4 className="mt-1 text-3xl font-black drop-shadow-md">42.5%</h4>
         </div>
       </div>
@@ -469,6 +460,7 @@ function StatsSection() {
 }
 
 function PrizePoolSection() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
   useGSAP(() => {
     gsap.fromTo(".prize-item",
@@ -480,41 +472,41 @@ function PrizePoolSection() {
   return (
     <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
       <div className="mb-10 text-center">
-        <span className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-300 backdrop-blur">🔍 On-Chain Transparency</span>
-        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">Real Prize Pool <span className="bg-gradient-to-r from-emerald-300 to-cyan-400 bg-clip-text text-transparent">Breakdown</span></h2>
-        <p className="mt-2 text-white/55 font-medium">Every payout is verifiable on Initia Blockchain — no hidden fees.</p>
+        <span className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-300 backdrop-blur">{t('pz_transparency')}</span>
+        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">{t('pz_title_1')} <span className="bg-gradient-to-r from-emerald-300 to-cyan-400 bg-clip-text text-transparent">{t('pz_title_2')}</span></h2>
+        <p className="mt-2 text-white/55 font-medium">{t('pz_desc')}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="prize-item rounded-[1.75rem] border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
           <div className="text-3xl mb-3">🏆</div>
-          <p className="text-xs font-black uppercase tracking-widest text-white/50">Total Pot</p>
+          <p className="text-xs font-black uppercase tracking-widest text-white/50">{t('pz_pot_label')}</p>
           <h3 className="mt-1 text-4xl font-black text-white">$40.00</h3>
-          <p className="mt-2 text-sm text-white/50">Stake per player × number of players. Pooled into smart contract before game starts.</p>
+          <p className="mt-2 text-sm text-white/50">{t('pz_pot_desc')}</p>
           <div className="mt-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-300">⛓️ On-chain: create_game(mode, stake)</div>
         </div>
         <div className="prize-item rounded-[1.75rem] border border-rose-400/20 bg-rose-500/10 p-6 backdrop-blur-xl">
           <div className="text-3xl mb-3">🧳</div>
-          <p className="text-xs font-black uppercase tracking-widest text-rose-300/70">Platform Fee</p>
+          <p className="text-xs font-black uppercase tracking-widest text-rose-300/70">{t('pz_fee_label')}</p>
           <h3 className="mt-1 text-4xl font-black text-rose-300">5%</h3>
-          <p className="mt-2 text-sm text-white/50">Fixed fee deducted from total pot to sustain the platform. Sent to treasury wallet automatically.</p>
+          <p className="mt-2 text-sm text-white/50">{t('pz_fee_desc')}</p>
           <div className="mt-4 rounded-xl bg-rose-500/10 border border-rose-500/20 px-3 py-2 text-xs font-semibold text-rose-300">⛓️ On-chain: fee_bps = 500</div>
         </div>
         <div className="prize-item rounded-[1.75rem] border border-amber-400/20 bg-amber-500/10 p-6 backdrop-blur-xl">
           <div className="text-3xl mb-3">💸</div>
-          <p className="text-xs font-black uppercase tracking-widest text-amber-300/70">Winner Payout</p>
+          <p className="text-xs font-black uppercase tracking-widest text-amber-300/70">{t('pz_win_label')}</p>
           <h3 className="mt-1 text-4xl font-black text-amber-300">$38.00</h3>
-          <p className="mt-2 text-sm text-white/50">Total pot minus fee. Sent directly to winner wallet on-chain the moment game ends.</p>
+          <p className="mt-2 text-sm text-white/50">{t('pz_win_desc')}</p>
           <div className="mt-4 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-300">⛓️ On-chain: settle_game(winner)</div>
         </div>
       </div>
       <div className="mt-8 rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur-xl">
-        <p className="text-[11px] font-black uppercase tracking-widest text-white/40 mb-3">⚡ Real-Time On-Chain Read</p>
+        <p className="text-[11px] font-black uppercase tracking-widest text-white/40 mb-3">{t('tx_realtime')}</p>
         <div className="grid gap-3 md:grid-cols-4">
           {[
-            { label: "Block Height", val: "#4,821,003", color: "text-cyan-300" },
-            { label: "Contract", val: "initia1...a8f9", color: "text-purple-300" },
-            { label: "Tx Status", val: "Confirmed", color: "text-emerald-300" },
-            { label: "Gas Used", val: "0.00042 INIT", color: "text-amber-300" },
+            { label: t('tx_block_height'), val: "#4,821,003", color: "text-cyan-300" },
+            { label: t('tx_contract'), val: "initia1...a8f9", color: "text-purple-300" },
+            { label: t('tx_status'), val: t('tx_confirmed'), color: "text-emerald-300" },
+            { label: t('tx_gas'), val: "0.00042 INIT", color: "text-amber-300" },
           ].map(({ label, val, color }) => (
             <div key={label} className="flex flex-col gap-1">
               <span className="text-xs font-semibold text-white/40">{label}</span>
@@ -528,6 +520,7 @@ function PrizePoolSection() {
 }
 
 function MatchHistorySection() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
   const matches = [
     { id: "0xa1f3", mode: "4P", stake: "$5.00", result: "WIN", payout: "+$19.00", nft: true, time: "2m ago" },
@@ -545,20 +538,20 @@ function MatchHistorySection() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
+    <section ref={containerRef as any} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
       <div className="mb-10 text-center md:text-left">
-        <span className="inline-block rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-blue-300 backdrop-blur">📜 On-Chain History</span>
-        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">Match <span className="bg-gradient-to-r from-blue-300 to-purple-400 bg-clip-text text-transparent">History</span></h2>
-        <p className="mt-2 text-white/55 font-medium">All games recorded immutably on Initia. Readable by anyone.</p>
+        <span className="inline-block rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-blue-300 backdrop-blur">{t('tx_onchain')}</span>
+        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">{t('tx_match_history')}</h2>
+        <p className="mt-2 text-white/55 font-medium">{t('tx_history_desc')}</p>
       </div>
       <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-black/30 backdrop-blur-xl">
         <div className="grid grid-cols-7 gap-2 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white/30 border-b border-white/10">
-          <span className="col-span-2">Tx Hash</span>
-          <span>Mode</span>
-          <span>Stake</span>
-          <span>Result</span>
-          <span>Payout</span>
-          <span>NFT</span>
+          <span className="col-span-2">{t('tx_hash')}</span>
+          <span>{t('tx_mode')}</span>
+          <span>{t('tx_stake')}</span>
+          <span>{t('tx_result')}</span>
+          <span>{t('tx_payout')}</span>
+          <span>{t('tx_nft')}</span>
         </div>
         {matches.map((m) => (
           <div key={m.id} className="match-row grid grid-cols-7 gap-2 items-center px-5 py-4 text-sm border-b border-white/5 hover:bg-white/5 transition-colors">
@@ -573,7 +566,7 @@ function MatchHistorySection() {
       </div>
       <div className="mt-4 flex justify-center">
         <button className="rounded-full border border-white/20 bg-white/10 px-6 py-2.5 text-sm font-black text-white/70 backdrop-blur transition hover:bg-white/20 hover:text-white">
-          View All On Explorer ↗
+          {t('tx_view_explorer')}
         </button>
       </div>
     </section>
@@ -581,6 +574,7 @@ function MatchHistorySection() {
 }
 
 function LeaderboardSection() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
   const [tab, setTab] = useState<"weekly" | "monthly">("weekly");
 
@@ -612,15 +606,15 @@ function LeaderboardSection() {
   return (
     <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
       <div className="mb-10 text-center">
-        <span className="inline-block rounded-full border border-amber-400/30 bg-amber-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-amber-300 backdrop-blur">🏆 Rankings</span>
-        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">Leaderboard</h2>
-        <p className="mt-2 text-white/55 font-medium">Top players this week and month. Updated in real-time.</p>
+        <span className="inline-block rounded-full border border-amber-400/30 bg-amber-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-amber-300 backdrop-blur">{t('lb_rankings')}</span>
+        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">{t('lb_title_1')}<span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">{t('lb_title_2')}</span></h2>
+        <p className="mt-2 text-white/55 font-medium">{t('lb_desc')}</p>
       </div>
       <div className="flex justify-center gap-2 mb-6">
-        {(["weekly", "monthly"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`rounded-full px-5 py-2 text-sm font-black uppercase tracking-wider transition ${tab === t ? "bg-amber-400 text-white" : "border border-white/20 bg-white/10 text-white/60 hover:text-white"}`}>
-            {t === "weekly" ? "⏳ Weekly" : "📅 Monthly"}
+        {(["weekly", "monthly"] as const).map((ti) => (
+          <button key={ti} onClick={() => setTab(ti)}
+            className={`rounded-full px-5 py-2 text-sm font-black uppercase tracking-wider transition ${tab === ti ? "bg-amber-400 text-white" : "border border-white/20 bg-white/10 text-white/60 hover:text-white"}`}>
+            {ti === "weekly" ? `⏳ ${t('lb_weekly')}` : `📅 ${t('lb_monthly')}`}
           </button>
         ))}
       </div>
@@ -632,8 +626,8 @@ function LeaderboardSection() {
               <span className="font-mono text-sm text-white/80">{row.wallet}</span>
             </div>
             <div className="flex items-center gap-6 text-right">
-              <div><p className="text-[10px] text-white/40 font-black uppercase">Wins</p><p className="font-black text-white">{row.wins}</p></div>
-              <div><p className="text-[10px] text-white/40 font-black uppercase">Earnings</p><p className="font-black text-emerald-300">{row.earnings}</p></div>
+              <div><p className="text-[10px] text-white/40 font-black uppercase">{t('lb_wins')}</p><p className="font-black text-white">{row.wins}</p></div>
+              <div><p className="text-[10px] text-white/40 font-black uppercase">{t('pr_earnings')}</p><p className="font-black text-emerald-300">{row.earnings}</p></div>
               <div><p className="text-[10px] text-white/40 font-black uppercase">NFTs</p><p className="font-black text-purple-300">{row.nfts}</p></div>
             </div>
           </div>
@@ -644,14 +638,15 @@ function LeaderboardSection() {
 }
 
 function NFTRewardsSection() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
   const nfts = [
-    { name: "Island Champion", rarity: "Legendary", icon: "🏆", color: "from-amber-400 to-orange-600", condition: "Win 10 games" },
-    { name: "Dice Master", rarity: "Epic", icon: "🎲", color: "from-purple-400 to-violet-700", condition: "Roll 6 three times in a row" },
-    { name: "Paradise Raider", rarity: "Rare", icon: "🌴", color: "from-cyan-400 to-blue-600", condition: "Play 50 games" },
-    { name: "Capture King", rarity: "Rare", icon: "⚔️", color: "from-rose-400 to-red-700", condition: "Capture 100 pawns" },
-    { name: "Lucky Player", rarity: "Common", icon: "🍀", color: "from-emerald-400 to-green-700", condition: "First win" },
-    { name: "Speedster", rarity: "Epic", icon: "⚡", color: "from-yellow-300 to-amber-500", condition: "Win in under 10 minutes" },
+    { name: "Island Champion", rarity: "Legendary", icon: "🏆", color: "from-amber-400 to-orange-600", condition: t('nft_cond_win_10') },
+    { name: "Dice Master", rarity: "Epic", icon: "🎲", color: "from-purple-400 to-violet-700", condition: t('nft_cond_666') },
+    { name: "Paradise Raider", rarity: "Rare", icon: "🌴", color: "from-cyan-400 to-blue-600", condition: t('nft_cond_50_games') },
+    { name: "Capture King", rarity: "Rare", icon: "⚔️", color: "from-rose-400 to-red-700", condition: t('nft_cond_100_captures') },
+    { name: "Lucky Player", rarity: "Common", icon: "🍀", color: "from-emerald-400 to-green-700", condition: t('nft_cond_first_win') },
+    { name: "Speedster", rarity: "Epic", icon: "⚡", color: "from-yellow-300 to-amber-500", condition: t('nft_cond_speed') },
   ];
   const rarityColor: Record<string, string> = {
     Legendary: "text-amber-300 border-amber-400/50 bg-amber-400/10",
@@ -668,11 +663,11 @@ function NFTRewardsSection() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
+    <section ref={containerRef as any} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
       <div className="mb-10 text-center">
-        <span className="inline-block rounded-full border border-purple-400/30 bg-purple-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-purple-300 backdrop-blur">🎨 NFT Rewards</span>
-        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">Win &amp; <span className="bg-gradient-to-r from-purple-300 to-pink-400 bg-clip-text text-transparent">Earn NFTs</span></h2>
-        <p className="mt-2 text-white/55 font-medium">Exclusive collectibles minted on-chain when you achieve milestones.</p>
+        <span className="inline-block rounded-full border border-purple-400/30 bg-purple-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-purple-300 backdrop-blur">{t('nft_badge')}</span>
+        <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">{t('nft_title_1')} <span className="bg-gradient-to-r from-purple-300 to-pink-400 bg-clip-text text-transparent">{t('nft_title_2')}</span></h2>
+        <p className="mt-2 text-white/55 font-medium">{t('nft_desc')}</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {nfts.map((nft) => (
@@ -683,8 +678,8 @@ function NFTRewardsSection() {
             <h4 className="mt-2 text-lg font-black text-white">{nft.name}</h4>
             <p className="mt-1 text-xs text-white/45">{nft.condition}</p>
             <div className="mt-4 flex gap-2">
-              <span className="text-xs rounded-full border border-white/10 bg-white/5 px-3 py-1 font-semibold text-white/50">🧰 On-Chain Mint</span>
-              <span className="text-xs rounded-full border border-white/10 bg-white/5 px-3 py-1 font-semibold text-white/50">🔁 Tradeable</span>
+              <span className="text-xs rounded-full border border-white/10 bg-white/5 px-3 py-1 font-semibold text-white/50">{t('nft_minted')}</span>
+              <span className="text-xs rounded-full border border-white/10 bg-white/5 px-3 py-1 font-semibold text-white/50">{t('nft_tradeable')}</span>
             </div>
           </div>
         ))}
@@ -692,20 +687,20 @@ function NFTRewardsSection() {
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
           <div className="text-2xl mb-2">😂</div>
-          <h4 className="font-black text-white">Emotes &amp; Reactions</h4>
-          <p className="text-sm text-white/50 mt-1">Unlock emotes you can use during matches to taunt or celebrate.</p>
+          <h4 className="font-black text-white">{t('nft_emotes_t')}</h4>
+          <p className="text-sm text-white/50 mt-1">{t('nft_emotes_d')}</p>
         </div>
         <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
           <div className="text-2xl mb-2">🪙</div>
-          <h4 className="font-black text-white">Token Drops</h4>
-          <p className="text-sm text-white/50 mt-1">Earn INIT token rewards as you climb the leaderboard each week.</p>
+          <h4 className="font-black text-white">{t('nft_token_t')}</h4>
+          <p className="text-sm text-white/50 mt-1">{t('nft_token_d')}</p>
         </div>
         <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
           <div className="text-2xl mb-2">👥</div>
-          <h4 className="font-black text-white">Invite Friends</h4>
-          <p className="text-sm text-white/50 mt-1">Send wallet-based invites. Both you and your friend earn bonus tokens on their first win.</p>
+          <h4 className="font-black text-white">{t('nft_invite_t')}</h4>
+          <p className="text-sm text-white/50 mt-1">{t('nft_invite_d')}</p>
           <button className="mt-3 rounded-full bg-gradient-to-r from-[#F97316] to-[#8B5CF6] px-4 py-2 text-xs font-black text-white transition hover:-translate-y-0.5">
-            Copy Invite Link
+            {t('nft_invite_btn')}
           </button>
         </div>
       </div>
@@ -715,14 +710,15 @@ function NFTRewardsSection() {
 
 
 function GameRules() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
   const rules = [
-    { icon: "🎯", title: "Objective", content: "Pindahkan semua bidak Anda dari base ke tujuan tengah sebelum pemain lain." },
-    { icon: "🎲", title: "Rolling the Dice", content: "Lempar dadu untuk menggerakkan bidak. Angka yang muncul menentukan jumlah langkah yang bisa diambil." },
-    { icon: "⚔️", title: "Capturing Tokens", content: "Mendarat di atas bidak lawan akan mengembalikannya ke base, kecuali jika berada di Safe Zone." },
-    { icon: "🛡️", title: "Safe Zones", content: "Bidak yang berada di Safe Zone ditandai bintang, bidak aman tidak bisa ditangkap lawan." },
-    { icon: "🏁", title: "Home Stretch", content: "Setelah mengelilingi papan, bidak harus masuk ke Home Stretch dan mencapai titik tengah persis." },
-    { icon: "🏆", title: "Winning", content: "Pemain pertama yang memasukkan ke-4 bidaknya ke tujuan akhir adalah pemenangnya!" },
+    { id: "gr_obj", icon: "🎯", title: t('gr_obj_t'), content: t('gr_obj_d') },
+    { id: "gr_roll", icon: "🎲", title: t('gr_roll_t'), content: t('gr_roll_d') },
+    { id: "gr_cap", icon: "⚔️", title: t('gr_cap_t'), content: t('gr_cap_d') },
+    { id: "gr_safe", icon: "🛡️", title: t('gr_safe_t'), content: t('gr_safe_d') },
+    { id: "gr_home", icon: "🏁", title: t('gr_home_t'), content: t('gr_home_d') },
+    { id: "gr_win", icon: "🏆", title: t('gr_win_t'), content: t('gr_win_d') },
   ];
 
   useGSAP(() => {
@@ -737,14 +733,14 @@ function GameRules() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-5xl px-4 py-16 md:px-8">
+    <section ref={containerRef as any} className="relative z-10 mx-auto w-full max-w-5xl px-4 py-16 md:px-8">
       <div className="rule-header mb-10 text-center md:text-left">
-        <h2 className="text-3xl font-black text-amber-300 md:text-4xl drop-shadow-sm"><span className="mr-2">📖</span> GAME RULES</h2>
-        <p className="mt-2 text-white/60 font-medium">Pelajari cara bermain dan kuasai Paradise Ludo!</p>
+        <h2 className="text-3xl font-black text-amber-300 md:text-4xl drop-shadow-sm"><span className="mr-2">📖</span> {t('gr_badge')}</h2>
+        <p className="mt-2 text-white/60 font-medium">{t('gr_desc')}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 items-start">
-        {rules.map((rule, idx) => (
-          <details key={idx} className="rule-card group rounded-[1.5rem] border border-amber-400/30 bg-white/10 backdrop-blur-xl p-5 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all hover:bg-white/15 hover:border-amber-400/50">
+        {rules.map((rule) => (
+          <details key={rule.id} className="rule-card group rounded-[1.5rem] border border-amber-400/30 bg-white/10 backdrop-blur-xl p-5 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all hover:bg-white/15 hover:border-amber-400/50">
             <summary className="flex cursor-pointer items-center justify-between font-bold text-white list-none [&::-webkit-details-marker]:hidden">
               <div className="flex items-center gap-3">
                 <span className="text-xl">{rule.icon}</span>
@@ -761,7 +757,8 @@ function GameRules() {
 }
 
 function CTAAndFooter() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
+  const containerRef = useRef<HTMLElement>(null);
 
   useGSAP(() => {
     gsap.fromTo(".cta-box",
@@ -775,15 +772,15 @@ function CTAAndFooter() {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="w-full bg-transparent mt-12 relative z-20">
+    <div ref={containerRef as any} className="w-full bg-transparent mt-12 relative z-20">
       <section className="mx-auto w-full max-w-7xl px-4 py-16 md:px-8">
         <div className="cta-box flex flex-col items-center justify-center text-center gap-8 rounded-[1.75rem] border border-white/10 bg-gradient-to-b from-white/5 to-white/[0.02] p-10 md:p-14 shadow-2xl backdrop-blur-3xl">
           <div className="max-w-2xl">
-            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-[#F97316] to-[#EAB308] bg-clip-text text-transparent drop-shadow-sm">Siap untuk Petualangan Tropis?</h2>
-            <p className="text-white/60 font-medium text-lg leading-relaxed">Bergabunglah dengan ribuan pemain di Initia Blockchain dan mulai menangkan hadiah NFT eksklusif hari ini!</p>
+            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-[#F97316] to-[#EAB308] bg-clip-text text-transparent drop-shadow-sm">{t('cta_title')}</h2>
+            <p className="text-white/60 font-medium text-lg leading-relaxed">{t('cta_desc')}</p>
           </div>
           <button className="group relative overflow-hidden rounded-full border border-white/25 bg-gradient-to-r from-orange-500 via-orange-550 to-orange-600 px-10 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-all duration-300 hover:-translate-y-1 hover:brightness-110 hover:border-white/40">
-            <span className="relative z-10 text-base">MAIN SEKARANG →</span>
+            <span className="relative z-10 text-base">{t('cta_btn')}</span>
             <div className="absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-20 bg-white" />
           </button>
         </div>
@@ -794,18 +791,18 @@ function CTAAndFooter() {
           <div className="grid gap-10 md:grid-cols-4 md:gap-8">
             <div className="footer-column">
               <h3 className="text-2xl font-black text-[#F97316] mb-4">Paradise Ludo</h3>
-              <p className="text-slate-400 text-sm font-medium leading-relaxed">Main ludo secara on-chain dan menang dengan strategi. Dibangun secara aman di atas Initia Blockchain.</p>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">{t('ft_desc')}</p>
             </div>
             <div className="footer-column">
-              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">QUICK LINKS</h4>
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">{t('ft_qlinks')}</h4>
               <ul className="space-y-2 text-slate-400 text-sm font-medium">
-                <li><button className="hover:text-[#F97316] transition-colors">Home</button></li>
-                <li><button className="hover:text-[#F97316] transition-colors">Leaderboard</button></li>
-                <li><button className="hover:text-[#F97316] transition-colors">My Stats</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">{t('nav_home')}</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">{t('nav_leaderboard')}</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">{t('pr_t_stats')}</button></li>
               </ul>
             </div>
             <div className="footer-column">
-              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">SUPPORT</h4>
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">{t('ft_support')}</h4>
               <ul className="space-y-2 text-slate-400 text-sm font-medium">
                 <li><button className="hover:text-[#F97316] transition-colors">FAQ</button></li>
                 <li><button className="hover:text-[#F97316] transition-colors">Terms of Service</button></li>
@@ -813,7 +810,7 @@ function CTAAndFooter() {
               </ul>
             </div>
             <div className="footer-column">
-              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">FOLLOW US</h4>
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">{t('ft_follow')}</h4>
               <ul className="space-y-2 text-slate-400 text-sm font-medium">
                 <li><button className="hover:text-[#F97316] transition-colors">Twitter/X</button></li>
                 <li><button className="hover:text-[#F97316] transition-colors">Discord</button></li>
@@ -822,7 +819,7 @@ function CTAAndFooter() {
             </div>
           </div>
           <div className="mt-12 border-t border-white/10 pt-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-            © 2026 Paradise Ludo. All Rights Reserved.
+            {t('ft_rights')}
           </div>
         </footer>
       </div>
@@ -832,6 +829,7 @@ function CTAAndFooter() {
 
 
 export default function Home() {
+  const { t } = useLanguage();
   const heroSectionRef = useRef<HTMLElement>(null);
   const [selectedMode, setSelectedMode] = useState<GameMode>("2player");
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
@@ -859,7 +857,7 @@ export default function Home() {
     if (dummyBalanceUsd < stakeUsd) {
       return {
         ok: false,
-        message: `Saldo dummy tidak cukup. Butuh ${formatUsd(stakeUsd)} untuk mulai match.`,
+        message: t('bet_insufficient').replace('${amount}', formatUsd(stakeUsd)),
       };
     }
 
@@ -896,10 +894,10 @@ export default function Home() {
     try {
       const result = await launchSession(selectedMode, selectedStakeUsd);
       if (!result.ok) {
-        setStakeError(result.message ?? "Gagal memulai match.");
+        setStakeError(result.message ?? t('bet_err_start'));
       }
     } catch {
-      setStakeError("Gagal menyiapkan payload create_game. Coba lagi.");
+      setStakeError(t('bet_err_payload'));
     } finally {
       setIsStartingMatch(false);
     }
@@ -912,7 +910,7 @@ export default function Home() {
     } catch {
       return {
         ok: false,
-        message: "Gagal menyiapkan rematch payload.",
+        message: t('bet_err_rematch'),
       };
     }
   };
@@ -974,29 +972,29 @@ export default function Home() {
         <Navbar balanceUsd={dummyBalanceUsd} />
 
         {/* ─────────────── HERO SECTION ─────────────── */}
-        <section ref={heroSectionRef} className="mx-auto grid min-h-[calc(100vh-88px)] w-full max-w-7xl gap-8 px-4 pb-12 pt-10 md:px-8 lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12">
+        <section ref={heroSectionRef} className="mx-auto grid min-h-screen w-full max-w-7xl gap-8 px-4 pb-12 pt-24 md:px-8 lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12">
 
           {/* LEFT: Hero text + Bet setup */}
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-orange-300 backdrop-blur">
-              🌴 On-Chain Party Board Game
+              {t('hero_badge')}
             </span>
 
             <h1 className="mt-5 text-5xl font-black leading-[0.95] tracking-tight text-white md:text-7xl drop-shadow-lg">
-              Paradice
+              {t('hero_title_1')}
               <span className="block bg-gradient-to-r from-[#F97316] via-[#EF4444] to-[#8B5CF6] bg-clip-text text-transparent">
-                Roll Into The<br />Island Arena
+                {t('hero_title_red')}<br />{t('hero_title_purple')}
               </span>
             </h1>
 
             <p className="mt-4 max-w-lg text-base font-medium leading-7 text-white/65">
-              Stake INIT, enter the arena, race your pawns to glory. Smart contract settles payouts. 5% fee. Winner takes all.
+              {t('hero_desc')}
             </p>
 
             {/* ── Bet Setup Card (glassmorphism) ── */}
             <div id="play" className="mt-8 rounded-[1.75rem] border border-white/15 bg-white/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl">
-              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-300">💰 Dummy Bet Setup</p>
-              <h3 className="mt-1 text-xl font-black text-white">Pilih taruhan sebelum match</h3>
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-300">{t('bet_title')}</p>
+              <h3 className="mt-1 text-xl font-black text-white">{t('bet_subtitle')}</h3>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {PRESET_STAKES_USD.map((amount) => {
@@ -1021,7 +1019,7 @@ export default function Home() {
                     : "border-white/20 bg-white/10 text-white/80 backdrop-blur hover:border-purple-400/60 hover:bg-white/20"
                     }`}
                 >
-                  Custom
+                  {t('bet_custom')}
                 </button>
               </div>
 
@@ -1030,7 +1028,7 @@ export default function Home() {
                   <input
                     type="number" min="0.1" step="0.1" value={customStakeInput}
                     onChange={(e) => { setCustomStakeInput(e.target.value); setStakeError(null); setSessionNotice(null); }}
-                    placeholder="Contoh: 3.5"
+                    placeholder={t('bet_placeholder_stake')}
                     className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white placeholder-white/30 outline-none ring-purple-400 backdrop-blur transition focus:ring-2"
                   />
                 </div>
@@ -1039,10 +1037,10 @@ export default function Home() {
               {/* Estimate table */}
               <div className="mt-4 grid gap-1.5 rounded-xl border border-white/10 bg-black/20 p-3 text-sm">
                 {[
-                  { label: "Stake / player", val: selectedStakeUsd ? formatUsd(selectedStakeUsd) : "-", color: "text-white" },
-                  { label: "Estimated total pot", val: formatUsd(estimatedPotUsd), color: "text-white" },
-                  { label: "Estimated tax (5%)", val: formatUsd(estimatedTaxUsd), color: "text-rose-400" },
-                  { label: "Estimated winner payout", val: formatUsd(estimatedPayoutUsd), color: "text-emerald-400" },
+                  { label: t('bet_stake_player'), val: selectedStakeUsd ? formatUsd(selectedStakeUsd) : "-", color: "text-white" },
+                  { label: t('bet_total_pot'), val: formatUsd(estimatedPotUsd), color: "text-white" },
+                  { label: t('bet_tax'), val: formatUsd(estimatedTaxUsd), color: "text-rose-400" },
+                  { label: t('bet_payout'), val: formatUsd(estimatedPayoutUsd), color: "text-emerald-400" },
                 ].map(({ label, val, color }) => (
                   <div key={label} className="flex items-center justify-between">
                     <span className="font-medium text-white/60">{label}</span>
@@ -1057,8 +1055,8 @@ export default function Home() {
               {lastSettlement && (
                 <div className={`mt-3 rounded-xl border px-3 py-2 text-sm font-semibold ${lastSettlement.playerWon ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300" : "border-white/15 bg-white/5 text-white/60"}`}>
                   {lastSettlement.playerWon
-                    ? `🏆 Menang! +${formatUsd(lastSettlement.winnerPayoutUsd)} credited.`
-                    : `💀 Kalah. Stake ${formatUsd(lastSettlement.stakeUsd)} → pot.`}
+                    ? t('bet_win_credited').replace('${amount}', formatUsd(lastSettlement.winnerPayoutUsd))
+                    : t('bet_lose_pot').replace('${amount}', formatUsd(lastSettlement.stakeUsd))}
                 </div>
               )}
 
@@ -1069,11 +1067,11 @@ export default function Home() {
                   disabled={isStartingMatch}
                   className="rounded-full bg-gradient-to-r from-[#F97316] to-[#EF4444] px-7 py-3.5 text-sm font-black uppercase tracking-[0.2em] text-white shadow-[0_12px_40px_rgba(249,115,22,0.45)] transition hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(249,115,22,0.55)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isStartingMatch ? "Preparing…" : "▶ Start Match"}
+                  {isStartingMatch ? t('bet_preparing') : t('bet_start')}
                 </button>
                 <span className="text-sm font-semibold text-white/50">
-                  Mode: <span className="font-black text-white">{selectedMode === "2player" ? "2 Players" : "4 Players"}</span>
-                  {" & "}Stake: <span className="font-black text-orange-300">{selectedStakeUsd ? formatUsd(selectedStakeUsd) : "—"}</span>
+                  {t('bet_mode')}: <span className="font-black text-white">{selectedMode === "2player" ? t('arena_2p_title') : t('arena_4p_title')}</span>
+                  {" & "}{t('bet_stake')}: <span className="font-black text-orange-300">{selectedStakeUsd ? formatUsd(selectedStakeUsd) : "—"}</span>
                 </span>
               </div>
             </div>
@@ -1089,12 +1087,23 @@ export default function Home() {
 
             {/* Mode selector card (glassmorphism) */}
             <div className="rounded-[1.75rem] border border-white/15 bg-white/10 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl">
-              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-purple-300">🎮 Choose Your Arena</p>
-              <h3 className="mt-1 text-lg font-black text-white">Select Game Mode</h3>
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-purple-300">{t('arena_title')}</p>
+              <h3 className="mt-1 text-lg font-black text-white">{t('arena_subtitle')}</h3>
 
               <div className="mt-4 grid gap-3">
                 {MODE_OPTIONS.map((option) => {
                   const isSelected = selectedMode === option.mode;
+                  const optT = option.mode === '2player' ? {
+                    title: t('arena_2p_title'),
+                    subtitle: t('arena_2p_subtitle'),
+                    desc: t('arena_2p_desc'),
+                    detail: t('arena_2p_detail')
+                  } : {
+                    title: t('arena_4p_title'),
+                    subtitle: t('arena_4p_subtitle'),
+                    desc: t('arena_4p_desc'),
+                    detail: t('arena_4p_detail')
+                  };
                   return (
                     <button
                       key={option.mode}
@@ -1107,10 +1116,10 @@ export default function Home() {
                       <div className={`absolute inset-x-0 top-0 h-[3px] rounded-t-[1.25rem] bg-gradient-to-r ${option.accent}`} />
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">{option.subtitle}</p>
-                          <h4 className="mt-1 text-xl font-black text-white">{option.title}</h4>
-                          <p className="mt-1 text-xs font-medium text-white/60">{option.summary}</p>
-                          <p className="mt-1 text-xs leading-5 text-white/45">{option.details}</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">{optT.subtitle}</p>
+                          <h4 className="mt-1 text-xl font-black text-white">{optT.title}</h4>
+                          <p className="mt-1 text-xs font-medium text-white/60">{optT.desc}</p>
+                          <p className="mt-1 text-xs leading-5 text-white/45">{optT.detail}</p>
                         </div>
                         <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black transition ${isSelected
                           ? "bg-white text-[#8B5CF6] shadow-lg"
