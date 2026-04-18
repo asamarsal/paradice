@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } f
 
 const getDots = (val: number) => {
     const dots = [];
-    const dotClass = "w-3.5 h-3.5 bg-white rounded-full place-self-center shadow-inner";
+    const dotClass = "w-2.5 h-2.5 bg-white rounded-full place-self-center shadow-inner";
 
     if (val === 1) {
         dots.push(<div key={1} className={`${dotClass} col-start-2 row-start-2`} />);
@@ -39,12 +39,12 @@ const getDots = (val: number) => {
 const DiceFace = ({ value, transform }: { value: number, transform: string }) => {
     return (
         <div
-            className="absolute inset-0 bg-[#8B5CF6] border-2 border-[#4C1D95] grid grid-cols-3 grid-rows-3 p-3 shadow-inner"
+            className="absolute inset-0 bg-[#8B5CF6] border-2 border-[#4C1D95] grid grid-cols-3 grid-rows-3 p-2 shadow-inner"
             style={{
                 transform,
                 backfaceVisibility: "hidden",
-                width: "96.5px", // Slight oversize to overlap and hide gaps from anti-aliasing
-                height: "96.5px",
+                width: "80.5px", // Slight oversize to overlap and hide gaps from anti-aliasing
+                height: "80.5px",
                 margin: "-0.25px"
             }}
         >
@@ -145,7 +145,7 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
     };
 
     return (
-        <div className="flex flex-col items-center gap-12 p-4">
+        <div className="flex flex-col items-center gap-8 p-4">
             <button
                 onMouseDown={startHold}
                 onMouseUp={finishHold}
@@ -159,10 +159,10 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
                     }
                 }}
                 disabled={isRolling || disabled}
-                className={`w-24 h-24 relative outline-none select-none transition-transform
+                className={`w-20 h-20 relative outline-none select-none transition-transform
                     ${disabled && !isRolling ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-95"}
                 `}
-                style={{ perspective: "600px" }}
+                style={{ perspective: "400px" }}
             >
                 <div
                     className="w-full h-full relative"
@@ -172,12 +172,12 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
                         transition: isHolding ? "none" : "transform 1.5s cubic-bezier(0.25, 1, 0.5, 1)"
                     }}
                 >
-                    <DiceFace value={1} transform="rotateY(0deg) translateZ(48px)" />
-                    <DiceFace value={6} transform="rotateY(180deg) translateZ(48px)" />
-                    <DiceFace value={2} transform="rotateY(90deg) translateZ(48px)" />
-                    <DiceFace value={5} transform="rotateY(-90deg) translateZ(48px)" />
-                    <DiceFace value={3} transform="rotateX(90deg) translateZ(48px)" />
-                    <DiceFace value={4} transform="rotateX(-90deg) translateZ(48px)" />
+                    <DiceFace value={1} transform="rotateY(0deg) translateZ(40px)" />
+                    <DiceFace value={6} transform="rotateY(180deg) translateZ(40px)" />
+                    <DiceFace value={2} transform="rotateY(90deg) translateZ(40px)" />
+                    <DiceFace value={5} transform="rotateY(-90deg) translateZ(40px)" />
+                    <DiceFace value={3} transform="rotateX(90deg) translateZ(40px)" />
+                    <DiceFace value={4} transform="rotateX(-90deg) translateZ(40px)" />
                 </div>
             </button>
 

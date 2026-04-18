@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import BackButton from '@/components/BackButton';
 import { useLanguage } from '@/context/LanguageContext';
+import Footer from '@/components/Footer';
 
 const formatUsd = (value: number) => `$${value.toFixed(2)}`;
 
@@ -237,6 +238,7 @@ export default function LeaderboardPage() {
 
                 </div>
             </main>
+            <Footer />
         </div>
     );
 }

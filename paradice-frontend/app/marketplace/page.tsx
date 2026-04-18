@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import BackButton from '@/components/BackButton';
 import { useLanguage } from '@/context/LanguageContext';
+import Footer from '@/components/Footer';
 
 const nfts = [
     {
@@ -276,6 +277,7 @@ export default function MarketplacePage() {
                     </div>
                 </div>
             </main>
+            <Footer />
         </div>
     );
 }

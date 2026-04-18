@@ -7,6 +7,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import { useLanguage } from '@/context/LanguageContext';
+import Footer from '@/components/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -354,7 +355,10 @@ export default function HowToPlayPage() {
                         </div>
                     </div>
                 </div>
+
             </main>
+
+            <Footer />
         </div>
     );
 }

@@ -5,12 +5,10 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import LudoBoard from "@/components/LudoBoard";
-import LiveChat from "@/components/LiveChat";
 import Dice, { DiceHandle } from "@/components/Dice";
 import Navbar from "@/components/Navbar";
 
 import { useLanguage } from "@/context/LanguageContext";
-import Footer from "@/components/Footer";
 
 if (typeof globalThis.window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -194,31 +192,62 @@ function GameScreen({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0f0c1a]">
-      <Navbar balanceUsd={balanceUsd} />
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.8),_transparent_30%),linear-gradient(180deg,_#FFF7D6_0%,_#FFF3C1_46%,_#FFE8B2_100%)]">
+      <header className="w-full border-b border-white/60 bg-white/80 px-4 py-4 shadow-[0_8px_30px_rgba(218,165,32,0.12)] backdrop-blur md:px-6">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,_#FDE68A,_#8B5CF6)] text-xl shadow-lg">
+              <span>T</span>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.35em] text-[#0F766E]">
+                Paradice
+              </p>
+              <h1 className="text-xl font-black tracking-tight text-[#6D28D9] md:text-2xl">
+                Tropical Ludo Arena
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="rounded-full border border-[#C7D2FE] bg-[#EEF2FF] px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#3730A3]">
+              Demo Balance: {formatUsd(balanceUsd)}
+            </div>
+            <button
+              onClick={onBackToMenu}
+              className="rounded-full border border-[#D6BCFA] bg-white px-4 py-2 text-sm font-bold text-[#6D28D9] transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+              Back to Menu
+            </button>
+            <button className="rounded-full bg-[#8B5CF6] px-6 py-2 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
+              Connect Wallet
+            </button>
+          </div>
+        </div>
+      </header>
 
       <div
-        className={`w-full px-4 py-3 text-center text-sm font-black tracking-[0.25em] mt-22 ${isPlayerTurn ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
+        className={`w-full px-4 py-3 text-center text-sm font-black tracking-[0.25em] ${isPlayerTurn ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
           }`}
       >
         {state.message}
       </div>
 
-      <main className="mx-auto grid w-full max-w-[1440px] flex-1 gap-4 px-3 py-4 lg:px-4 xl:grid-cols-[280px_minmax(0,1fr)_280px] xl:items-start">
-        <section className="w-full rounded-[1.5rem] border border-white/10 bg-white/5 p-4 shadow-2xl backdrop-blur-md">
-          <div className="mb-4 flex items-start justify-between gap-3">
+      <main className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-6 lg:px-6 xl:grid-cols-[360px_minmax(0,1fr)_240px] xl:items-start">
+        <section className="w-full rounded-[2rem] border border-white/70 bg-white/65 p-6 shadow-[0_20px_70px_rgba(124,58,237,0.12)] backdrop-blur">
+          <div className="mb-6 flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-cyan-400">
+              <p className="text-xs font-black uppercase tracking-[0.35em] text-[#0F766E]">
                 Live Match
               </p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-white drop-shadow-md">
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-[#1E3A8A]">
                 {modeLabel}
               </h2>
             </div>
             <button
               onClick={handleRestart}
               disabled={isRematchStarting}
-              className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300 transition hover:bg-white/20 hover:text-white border border-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-[#EEF2FF] px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#4338CA] transition hover:bg-[#E0E7FF] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isRematchStarting ? "Starting..." : "Rematch"}
             </button>
@@ -230,32 +259,32 @@ function GameScreen({
           )}
 
           <div
-            className="mb-4 rounded-[1.25rem] border border-white/10 bg-[#0f0c1a]/50 p-3 shadow-inner"
+            className="mb-5 rounded-[1.5rem] border bg-white/90 p-4 shadow-sm"
             style={{
-              borderColor: `${turnColor}40`,
-              boxShadow: `0 0 10px 0px ${turnColor}20`,
+              borderColor: `${turnColor}55`,
+              boxShadow: `0 0 0 3px ${turnColor}18`,
             }}
           >
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">
+            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
               Current Turn
             </p>
             <div className="mt-2 flex items-center gap-3">
               <span
-                className="h-3 w-3 rounded-full ring-2 ring-white/40"
-                style={{ backgroundColor: turnColor, boxShadow: `0 0 10px ${turnColor}` }}
+                className="h-4 w-4 rounded-full ring-4 ring-white"
+                style={{ backgroundColor: turnColor }}
               />
               <div>
-                <p className="text-xl font-black tracking-tight drop-shadow-sm" style={{ color: turnColor }}>
+                <p className="text-2xl font-black tracking-tight" style={{ color: turnColor }}>
                   {currentTurnLabel}
                 </p>
-                <p className="text-xs font-semibold text-white/70">
+                <p className="text-sm font-semibold text-slate-600">
                   {currentPlayerCfg?.type === "human" ? "Your move is live now." : `${currentTurnLabel} is making a move.`}
                 </p>
               </div>
             </div>
             {pendingPlayerCfg && (
-              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
-                Up next: <span className="text-white/80">{pendingPlayerCfg.label}</span>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Up next: <span className="text-slate-800">{pendingPlayerCfg.label}</span>
               </p>
             )}
           </div>
@@ -269,24 +298,24 @@ function GameScreen({
             message={isBot ? "BOT TURN" : canRoll ? "HOLD TO SPIN" : "WAITING..."}
           />
 
-          <div className="grid gap-2 rounded-[1.25rem] border border-white/10 bg-white/5 p-3 text-[11px] text-white/60">
+          <div className="grid gap-3 rounded-[1.5rem] border border-[#E9D5FF] bg-[#FFFDF6] p-4 text-sm text-[#475569]">
             <div className="flex items-center justify-between">
-              <span className="font-semibold uppercase tracking-widest text-white/40">Phase</span>
-              <strong className="font-mono text-cyan-300">{state.phase}</strong>
+              <span className="font-semibold text-[#64748B]">Phase</span>
+              <strong className="font-mono text-[#1E293B]">{state.phase}</strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-semibold uppercase tracking-widest text-white/40">Player</span>
-              <strong className="font-mono capitalize text-white">
+              <span className="font-semibold text-[#64748B]">Current Player</span>
+              <strong className="font-mono capitalize text-[#1E293B]">
                 {state.currentPlayer}
               </strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-semibold uppercase tracking-widest text-white/40">Dice</span>
-              <strong className="font-mono text-white">{displayedDiceValue ?? "-"}</strong>
+              <span className="font-semibold text-[#64748B]">Dice</span>
+              <strong className="font-mono text-[#1E293B]">{displayedDiceValue ?? "-"}</strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-semibold uppercase tracking-widest text-white/40">Movable</span>
-              <strong className="font-mono text-white">
+              <span className="font-semibold text-[#64748B]">Movable</span>
+              <strong className="font-mono text-[#1E293B]">
                 {movablePawnIds.join(", ") || "none"}
               </strong>
             </div>
@@ -307,7 +336,7 @@ function GameScreen({
         </section>
 
         <section className="flex w-full justify-center xl:justify-start">
-          <div className="w-full max-w-[550px] rounded-[2rem] border border-white/10 bg-white/5 p-2 shadow-2xl backdrop-blur-xl sm:p-3 relative">
+          <div className="w-full max-w-[700px] rounded-[2.25rem] border border-white/80 bg-white/70 p-3 shadow-[0_25px_80px_rgba(15,118,110,0.16)] backdrop-blur sm:p-5">
             <LudoBoard
               gameState={state}
               cfg={cfg}
@@ -317,68 +346,73 @@ function GameScreen({
           </div>
         </section>
 
-        <aside className="w-full xl:w-[280px] xl:justify-self-end mt-4 xl:mt-0">
+        <aside className="w-full xl:w-[240px] xl:justify-self-end">
           <div className="grid gap-3">
-            <LiveChat />
-            <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-3 shadow-sm backdrop-blur-md">
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40">
+            <div className="rounded-2xl border border-[#D8B4FE] bg-white/88 p-3 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
                 Payload
               </p>
-              <div className="mt-2 grid gap-1.5 text-[11px] text-white/60">
+              <div className="mt-2 grid gap-1.5 text-[12px] text-slate-700">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Session</span>
-                  <strong className="font-mono text-cyan-300">{compactSessionRef}</strong>
+                  <strong className="font-mono text-[#1E293B]">{compactSessionRef}</strong>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Tx</span>
-                  <strong className="font-mono text-cyan-300">{compactTxHash}</strong>
+                  <strong className="font-mono text-[#1E293B]">{compactTxHash}</strong>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Call</span>
-                  <strong className="font-mono text-cyan-300">{createPayload.functionName}</strong>
+                  <strong className="font-mono text-[#1E293B]">{createPayload.functionName}</strong>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold">Args</span>
+                  <strong className="font-mono text-[#1E293B]">
+                    {createPayload.args[0]}, {createPayload.args[1]}
+                  </strong>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-3 shadow-sm backdrop-blur-md">
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40">
+            <div className="rounded-2xl border border-[#BFDBFE] bg-white/88 p-3 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
                 Bet Info
               </p>
-              <div className="mt-2 grid gap-1.5 text-[11px] text-white/60">
+              <div className="mt-2 grid gap-1.5 text-[12px] text-slate-700">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Stake</span>
-                  <strong className="font-black text-white">{formatUsd(stakeUsd)}</strong>
+                  <strong className="font-black text-[#1E3A8A]">{formatUsd(stakeUsd)}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Players</span>
-                  <strong className="font-black text-white">{totalPlayers}</strong>
+                  <strong className="font-black text-[#1E3A8A]">{totalPlayers}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Max players</span>
-                  <strong className="font-black text-white">{maxPlayers}</strong>
+                  <strong className="font-black text-[#1E3A8A]">{maxPlayers}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Stake units</span>
-                  <strong className="font-black text-white">{chainStakeUnits}</strong>
+                  <strong className="font-black text-[#1E3A8A]">{chainStakeUnits}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Pot</span>
-                  <strong className="font-black text-white">{formatUsd(totalPotUsd)}</strong>
+                  <strong className="font-black text-[#1E3A8A]">{formatUsd(totalPotUsd)}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Tax</span>
-                  <strong className="font-black text-rose-400">{formatUsd(taxUsd)}</strong>
+                  <strong className="font-black text-[#E11D48]">{formatUsd(taxUsd)}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Payout</span>
-                  <strong className="font-black text-emerald-400">{formatUsd(winnerPayoutUsd)}</strong>
+                  <strong className="font-black text-[#0F766E]">{formatUsd(winnerPayoutUsd)}</strong>
                 </div>
               </div>
             </div>
           </div>
         </aside>
       </main>
-    </div >
+    </div>
   );
 }
 
@@ -722,7 +756,7 @@ function GameRules() {
   );
 }
 
-function CTA() {
+function CTAAndFooter() {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
 
@@ -730,6 +764,10 @@ function CTA() {
     gsap.fromTo(".cta-box",
       { opacity: 0, scale: 0.9, y: 60 },
       { opacity: 1, scale: 1, y: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: containerRef.current, start: "top 85%", toggleActions: "play none none reset" } }
+    );
+    gsap.fromTo(".footer-column",
+      { opacity: 0, x: -40 },
+      { opacity: 1, x: 0, duration: 0.7, stagger: 0.12, ease: "power2.out", scrollTrigger: { trigger: ".footer-column", start: "top 95%", toggleActions: "play none none reset" } }
     );
   }, { scope: containerRef });
 
@@ -747,6 +785,44 @@ function CTA() {
           </button>
         </div>
       </section>
+
+      <div className="bg-[#1e1e1e] w-full">
+        <footer className="mx-auto w-full max-w-7xl px-4 pb-12 pt-8 md:px-8">
+          <div className="grid gap-10 md:grid-cols-4 md:gap-8">
+            <div className="footer-column">
+              <h3 className="text-2xl font-black text-[#F97316] mb-4">Paradise Ludo</h3>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">{t('ft_desc')}</p>
+            </div>
+            <div className="footer-column">
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">{t('ft_qlinks')}</h4>
+              <ul className="space-y-2 text-slate-400 text-sm font-medium">
+                <li><button className="hover:text-[#F97316] transition-colors">{t('nav_home')}</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">{t('nav_leaderboard')}</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">{t('pr_t_stats')}</button></li>
+              </ul>
+            </div>
+            <div className="footer-column">
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">{t('ft_support')}</h4>
+              <ul className="space-y-2 text-slate-400 text-sm font-medium">
+                <li><button className="hover:text-[#F97316] transition-colors">FAQ</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Terms of Service</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Privacy Policy</button></li>
+              </ul>
+            </div>
+            <div className="footer-column">
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">{t('ft_follow')}</h4>
+              <ul className="space-y-2 text-slate-400 text-sm font-medium">
+                <li><button className="hover:text-[#F97316] transition-colors">Twitter/X</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Discord</button></li>
+                <li><button className="hover:text-[#F97316] transition-colors">Medium</button></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-12 border-t border-white/10 pt-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            {t('ft_rights')}
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
@@ -1069,8 +1145,7 @@ export default function Home() {
 
       </main>
 
-      <CTA />
-      <Footer />
+      <CTAAndFooter />
     </div>
   );
 }
