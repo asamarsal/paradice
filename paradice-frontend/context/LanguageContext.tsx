@@ -87,7 +87,7 @@ const translations: Translations = {
     arena_4p_desc: { en: 'Busy, chaotic, and full of comebacks.', id: 'Rame, chaos, dan penuh comeback.' },
     arena_4p_detail: { en: 'Three active bots make the board livelier with more blocks, captures, and revenge.', id: 'Tiga bot aktif membuat papan lebih hidup dengan lebih banyak block, capture, dan balas dendam.' },
 
-    hero_badge: { en: '🌴 ON-CHAIN PARTY BOARD GAME', id: '🌴 PERMAINAN PAPAN PESTA ON-CHAIN' },
+    hero_badge: { en: '🌴 ONCHAIN PARTY BOARD GAME', id: '🌴 PERMAINAN PAPAN PESTA ON-CHAIN' },
     hero_title_1: { en: 'Roll Into The', id: 'Lempar Dadu di' },
     hero_title_red: { en: 'Island', id: 'Arena' },
     hero_title_purple: { en: 'Arena', id: 'Pulau' },

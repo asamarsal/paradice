@@ -16,6 +16,8 @@ if (globalThis.window !== undefined) {
 export default function AboutPage() {
   const mainRef = useRef<HTMLDivElement>(null);
 
+  const { t } = useLanguage();
+
   useGSAP(() => {
     // Proper Parallax: Reveal bottom of image (ukulele/treasure) as we scroll down
     gsap.to(".bg-layer-top", {
@@ -412,17 +414,20 @@ export default function AboutPage() {
         </section>
 
         {/* 🔥 FINAL CTA */}
-        <section className="about-section mx-auto max-w-5xl text-center mb-20">
-          <div className="glass-card rounded-[4rem] border border-white/10 bg-gradient-to-b from-orange-600/20 to-purple-600/20 p-12 md:p-24 backdrop-blur-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)]">
-            <h2 className="text-4xl md:text-7xl font-black mb-8 text-white leading-tight">Join the Paradice Evolution</h2>
-            <p className="text-lg md:text-2xl text-white/70 font-medium max-w-2xl mx-auto leading-relaxed mb-12">
-              Be part of the next generation of on-chain gaming—where every move counts, and every win is yours.
-            </p>
-            <Link href="/play" className="inline-flex items-center gap-3 rounded-full bg-white px-10 py-5 text-lg font-black uppercase tracking-widest text-orange-600 transition hover:-translate-y-1 hover:bg-white/90 hover:shadow-2xl">
-              Start Playing →
-            </Link>
-          </div>
-        </section>
+        <div className="w-full bg-transparent mt-12 relative z-20">
+          <section className="mx-auto w-full max-w-7xl px-4 py-16 md:px-8">
+            <div className="cta-box flex flex-col items-center justify-center text-center gap-8 rounded-[1.75rem] border border-white/10 bg-gradient-to-b from-white/5 to-white/[0.02] p-10 md:p-14 shadow-2xl backdrop-blur-3xl">
+              <div className="max-w-2xl">
+                <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-[#F97316] to-[#EAB308] bg-clip-text text-transparent drop-shadow-sm">{t('cta_title')}</h2>
+                <p className="text-white/60 font-medium text-lg leading-relaxed">{t('cta_desc')}</p>
+              </div>
+              <button className="group relative overflow-hidden rounded-full border border-white/25 bg-gradient-to-r from-orange-500 via-orange-550 to-orange-600 px-10 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-all duration-300 hover:-translate-y-1 hover:brightness-110 hover:border-white/40">
+                <span className="relative z-10 text-base">{t('cta_btn')}</span>
+                <div className="absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-20 bg-white" />
+              </button>
+            </div>
+          </section>
+        </div>
 
       </main>
 
