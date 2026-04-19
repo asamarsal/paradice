@@ -18,6 +18,7 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
     const [showWalletInfo, setShowWalletInfo] = useState(false);
     const [showLangMenu, setShowLangMenu] = useState(false);
     const [showMusicMenu, setShowMusicMenu] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const { locale, setLocale, t } = useLanguage();
     const { address, initiaAddress, username, openWallet, openConnect, isConnected } = useInterwovenKit();
     const { totalValue } = usePortfolio();
@@ -33,11 +34,11 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
 
     const navLinks = [
         { label: t('nav_home'), href: '/' },
-        { label: t('nav_play'), href: '/#play' },
+        { label: t('nav_play'), href: '/play' },
         { label: t('nav_marketplace'), href: '/marketplace' },
         { label: t('nav_leaderboard'), href: '/leaderboard' },
         { label: t('nav_howto'), href: '/how-to-play' },
-        { label: t('nav_about'), href: '#' },
+        { label: t('nav_about'), href: '/about' },
     ];
 
     const formatUsd = (value: number) => `$${value.toFixed(2)}`;
@@ -53,7 +54,7 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
         // Realtime logic based on user's requirement:
         if (network === 'mainnet') return 0;
         if (network === 'testnet') return 0.95;
-        
+
         if (!isConnected) return 0;
         return Number.isFinite(totalValue) ? totalValue : 0;
     }, [network, isConnected, totalValue]);
@@ -64,10 +65,9 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
     };
 
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${isScrolled ? 'pt-0 px-0' : 'pt-4 px-4 md:px-8'
-            }`}>
-            <div className={`mx-auto flex w-full items-center justify-between border-white/15 bg-white/10 px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-all duration-500 ease-in-out ${isScrolled ? 'max-w-none rounded-none border-b bg-white/15 py-4' : 'max-w-7xl rounded-2xl border'
-                }`}>
+        <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${isScrolled ? 'pt-0 px-0' : 'pt-4 px-4 md:px-8'}`}>
+            <div className={`mx-auto w-full border-white/15 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-all duration-500 ease-in-out ${isScrolled ? 'max-w-none rounded-none border-b bg-white/15' : 'max-w-7xl rounded-2xl border'}`}>
+            <div className="flex items-center justify-between px-5 py-3">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 transition hover:opacity-80">
                     <img src="/icon/paradice-icon.png" alt="Paradice Icon" className="h-8 w-8 object-contain drop-shadow-md" />
@@ -95,7 +95,19 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                 </div>
 
                 {/* Right side */}
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-2 md:gap-5">
+                    {/* Hamburger - mobile only */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="flex md:hidden h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition hover:bg-white/20"
+                        aria-label="Toggle menu"
+                    >
+                        {mobileMenuOpen ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                        )}
+                    </button>
                     {/* UTILITIES GROUP (Settings) */}
                     <div className="hidden items-center gap-2 border-r border-white/10 pr-5 md:flex relative">
                         {/* Language Dropdown */}
@@ -256,8 +268,8 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                         </div>
                     </div>
 
-                    {/* ACCOUNT GROUP */}
-                    <div className="flex items-center gap-2 md:gap-3 relative">
+                    {/* ACCOUNT GROUP - desktop only */}
+                    <div className="hidden md:flex items-center gap-2 md:gap-3 relative">
                         {/* Balance Card Touchable */}
                         <div className="relative">
                             <button
@@ -356,6 +368,47 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                         </ConnectButton.Custom>
                     </div>
                 </div>
+            </div>
+
+            {/* Mobile Dropdown Menu */}
+            {mobileMenuOpen && (
+                <div className="md:hidden px-4 pb-4 animate-fade-in">
+                    <div className="rounded-2xl border border-white/15 bg-white/10 backdrop-blur-2xl p-4 shadow-2xl flex flex-col gap-1">
+                        {navLinks.map((link) => {
+                            const isActive = pathname === link.href;
+                            return (
+                                <Link
+                                    key={link.label}
+                                    href={link.href}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                                        isActive
+                                            ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                                            : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                    {link.label}
+                                </Link>
+                            );
+                        })}
+                        <div className="mt-2 pt-2 border-t border-white/10">
+                            <ConnectButton.Custom>
+                                {({ account, chain, openConnectModal, mounted }) => {
+                                    const connected = mounted && account && chain;
+                                    return (
+                                        <button
+                                            onClick={connected ? () => openWallet?.() : openConnectModal}
+                                            className="w-full h-11 rounded-xl bg-gradient-to-r from-[#F97316] to-[#EF4444] text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-orange-500/30 transition"
+                                        >
+                                            {connected ? walletDisplayName : t('nav_connect_wallet')}
+                                        </button>
+                                    );
+                                }}
+                            </ConnectButton.Custom>
+                        </div>
+                    </div>
+                </div>
+            )}
             </div>
 
             <style jsx>{`

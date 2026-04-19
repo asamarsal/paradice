@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
+import Footer from "@/components/Footer";
 
 export default function LobbyPage() {
     const [players, setPlayers] = useState<2 | 4>(2);
@@ -299,6 +300,7 @@ export default function LobbyPage() {
                     </div>
                 </div>
             </main>
+            <Footer />
         </div>
     );
 }

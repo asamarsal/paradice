@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
@@ -7,10 +7,11 @@ import { useGSAP } from "@gsap/react";
 import LudoBoard from "@/components/LudoBoard";
 import Dice, { DiceHandle } from "@/components/Dice";
 import Navbar from "@/components/Navbar";
+import LiveChat from "@/components/LiveChat";
 
 import { useLanguage } from "@/context/LanguageContext";
 
-if (typeof globalThis.window !== "undefined") {
+if (globalThis.window !== undefined) {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
 import { useLudoGame } from "@/hooks/useLudoGame";
@@ -175,6 +176,7 @@ function GameScreen({
       : [];
   const movablePawnIds = validMoves.map((m) => m.pawn.id);
   const modeLabel = mode === "2player" ? "2 Players" : "4 Players";
+  const diceMessage = isBot ? "BOT TURN" : (canRoll ? "HOLD TO SPIN" : "WAITING...");
   const compactSessionRef =
     sessionRef.length > 16 ? `${sessionRef.slice(0, 12)}...` : sessionRef;
   const compactTxHash =
@@ -195,99 +197,72 @@ function GameScreen({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.8),_transparent_30%),linear-gradient(180deg,_#FFF7D6_0%,_#FFF3C1_46%,_#FFE8B2_100%)]">
-      <header className="w-full border-b border-white/60 bg-white/80 px-4 py-4 shadow-[0_8px_30px_rgba(218,165,32,0.12)] backdrop-blur md:px-6">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,_#FDE68A,_#8B5CF6)] text-xl shadow-lg">
-              <span>T</span>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.35em] text-[#0F766E]">
-                Paradice
-              </p>
-              <h1 className="text-xl font-black tracking-tight text-[#6D28D9] md:text-2xl">
-                Tropical Ludo Arena
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="rounded-full border border-[#C7D2FE] bg-[#EEF2FF] px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#3730A3]">
-              Demo Balance: {formatUsd(balanceUsd)}
-            </div>
-            <button
-              onClick={onBackToMenu}
-              className="rounded-full border border-[#D6BCFA] bg-white px-4 py-2 text-sm font-bold text-[#6D28D9] transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              Back to Menu
-            </button>
-            <button className="rounded-full bg-[#8B5CF6] px-6 py-2 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
-              Connect Wallet
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col pt-20 bg-[#0a0520] relative overflow-hidden text-white">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,_rgba(139,92,246,0.15),_transparent_50%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.1),_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20" />
+      </div>
+      <Navbar balanceUsd={balanceUsd} />
 
       <div
-        className={`w-full px-4 py-3 text-center text-sm font-black tracking-[0.25em] ${isPlayerTurn ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
-          }`}
+        className={`w-full px-4 py-2 text-center text-xs font-black tracking-[0.3em] uppercase ${isPlayerTurn ? "bg-blue-500/10 text-blue-300 border-y border-blue-500/20" : "bg-emerald-500/10 text-emerald-300 border-y border-emerald-500/20"
+          } backdrop-blur-md relative z-10`}
       >
         {state.message}
       </div>
 
-      <main className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-6 lg:px-6 xl:grid-cols-[360px_minmax(0,1fr)_240px] xl:items-start">
-        <section className="w-full rounded-[2rem] border border-white/70 bg-white/65 p-6 shadow-[0_20px_70px_rgba(124,58,237,0.12)] backdrop-blur">
+      <main className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-6 lg:px-6 xl:grid-cols-[360px_minmax(0,1fr)_320px] xl:items-start relative z-10">
+        <section className="w-full rounded-[2.5rem] border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-3xl">
           <div className="mb-6 flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.35em] text-[#0F766E]">
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-emerald-400">
                 Live Match
               </p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-[#1E3A8A]">
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-white">
                 {modeLabel}
               </h2>
             </div>
             <button
               onClick={handleRestart}
               disabled={isRematchStarting}
-              className="rounded-full bg-[#EEF2FF] px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#4338CA] transition hover:bg-[#E0E7FF] disabled:cursor-not-allowed disabled:opacity-70"
+              className="rounded-full bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-70 border border-white/10"
             >
               {isRematchStarting ? "Starting..." : "Rematch"}
             </button>
           </div>
           {restartNotice && (
-            <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+            <p className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-300">
               {restartNotice}
             </p>
           )}
 
           <div
-            className="mb-5 rounded-[1.5rem] border bg-white/90 p-4 shadow-sm"
+            className="mb-5 rounded-[1.75rem] border bg-white/5 p-4 shadow-inner"
             style={{
-              borderColor: `${turnColor}55`,
-              boxShadow: `0 0 0 3px ${turnColor}18`,
+              borderColor: `${turnColor}44`,
             }}
           >
-            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">
               Current Turn
             </p>
             <div className="mt-2 flex items-center gap-3">
               <span
-                className="h-4 w-4 rounded-full ring-4 ring-white"
+                className="h-4 w-4 rounded-full ring-4 ring-white/10"
                 style={{ backgroundColor: turnColor }}
               />
               <div>
-                <p className="text-2xl font-black tracking-tight" style={{ color: turnColor }}>
+                <p className="text-2xl font-black tracking-tight text-white">
                   {currentTurnLabel}
                 </p>
-                <p className="text-sm font-semibold text-slate-600">
+                <p className="text-[11px] font-semibold text-white/50">
                   {currentPlayerCfg?.type === "human" ? "Your move is live now." : `${currentTurnLabel} is making a move.`}
                 </p>
               </div>
             </div>
             {pendingPlayerCfg && (
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Up next: <span className="text-slate-800">{pendingPlayerCfg.label}</span>
+              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">
+                Up next: <span className="text-white/60">{pendingPlayerCfg.label}</span>
               </p>
             )}
           </div>
@@ -298,27 +273,25 @@ function GameScreen({
             disabled={!canRoll}
             value={displayedDiceValue}
             isBot={isBot}
-            message={isBot ? "BOT TURN" : canRoll ? "HOLD TO SPIN" : "WAITING..."}
+            message={diceMessage}
           />
 
-          <div className="grid gap-3 rounded-[1.5rem] border border-[#E9D5FF] bg-[#FFFDF6] p-4 text-sm text-[#475569]">
+          <div className="grid gap-3 rounded-[1.5rem] border border-white/10 bg-black/20 p-4 text-xs text-white/70">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#64748B]">Phase</span>
-              <strong className="font-mono text-[#1E293B]">{state.phase}</strong>
+              <span className="font-semibold text-white/40 uppercase tracking-widest text-[9px]">Phase</span>
+              <strong className="font-mono text-cyan-400">{state.phase}</strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#64748B]">Current Player</span>
-              <strong className="font-mono capitalize text-[#1E293B]">
-                {state.currentPlayer}
-              </strong>
+              <span className="font-semibold text-white/40 uppercase tracking-widest text-[9px]">Player</span>
+              <strong className="font-mono capitalize text-white">{state.currentPlayer}</strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#64748B]">Dice</span>
-              <strong className="font-mono text-[#1E293B]">{displayedDiceValue ?? "-"}</strong>
+              <span className="font-semibold text-white/40 uppercase tracking-widest text-[9px]">Dice</span>
+              <strong className="font-mono text-white">{displayedDiceValue ?? "-"}</strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#64748B]">Movable</span>
-              <strong className="font-mono text-[#1E293B]">
+              <span className="font-semibold text-white/40 uppercase tracking-widest text-[9px]">Movable</span>
+              <strong className="font-mono text-white">
                 {movablePawnIds.join(", ") || "none"}
               </strong>
             </div>
@@ -327,8 +300,8 @@ function GameScreen({
           {state.phase === "game_over" && (
             <div
               className={`mt-4 rounded-[1.25rem] border px-4 py-3 text-sm font-semibold ${playerWon
-                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                : "border-rose-300 bg-rose-50 text-rose-800"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                : "border-rose-500/40 bg-rose-500/10 text-rose-300"
                 }`}
             >
               {playerWon
@@ -338,77 +311,68 @@ function GameScreen({
           )}
         </section>
 
-        <section className="flex w-full justify-center xl:justify-start">
-          <div className="w-full max-w-[700px] rounded-[2.25rem] border border-white/80 bg-white/70 p-3 shadow-[0_25px_80px_rgba(15,118,110,0.16)] backdrop-blur sm:p-5">
+        <section className="flex w-full justify-center xl:justify-start relative">
+          <div className="w-full max-w-[700px] rounded-[3rem] border border-white/10 bg-white/5 p-4 shadow-[0_40px_100px_rgba(0,0,0,0.5)] backdrop-blur-3xl sm:p-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4">
+               <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded">Bot</span>
+            </div>
             <LudoBoard
               gameState={state}
               cfg={cfg}
               movablePawnIds={movablePawnIds}
               onPawnClick={handlePawnClick}
             />
+            
+            {/* Turn Pill */}
+            {isPlayerTurn && (
+               <div className="absolute bottom-8 left-8 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-2xl">
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-widest">You</span>
+                  <div className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md">TURN</div>
+               </div>
+            )}
           </div>
         </section>
 
-        <aside className="w-full xl:w-[240px] xl:justify-self-end">
-          <div className="grid gap-3">
-            <div className="rounded-2xl border border-[#D8B4FE] bg-white/88 p-3 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+        <aside className="w-full xl:w-[320px] xl:justify-self-end flex flex-col gap-6">
+          <LiveChat />
+          
+          <div className="grid gap-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl backdrop-blur-md">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/40">
                 Payload
               </p>
-              <div className="mt-2 grid gap-1.5 text-[12px] text-slate-700">
+              <div className="mt-3 grid gap-2 text-[11px] text-white/60">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Session</span>
-                  <strong className="font-mono text-[#1E293B]">{compactSessionRef}</strong>
+                  <strong className="font-mono text-cyan-400">{compactSessionRef}</strong>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Tx</span>
-                  <strong className="font-mono text-[#1E293B]">{compactTxHash}</strong>
+                  <strong className="font-mono text-emerald-400">{compactTxHash}</strong>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Call</span>
-                  <strong className="font-mono text-[#1E293B]">{createPayload.functionName}</strong>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold">Args</span>
-                  <strong className="font-mono text-[#1E293B]">
-                    {createPayload.args[0]}, {createPayload.args[1]}
-                  </strong>
+                  <strong className="font-mono text-white/80">{createPayload.functionName}</strong>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#BFDBFE] bg-white/88 p-3 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl backdrop-blur-md hidden md:block">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/40">
                 Bet Info
               </p>
-              <div className="mt-2 grid gap-1.5 text-[12px] text-slate-700">
+              <div className="mt-3 grid gap-2 text-[11px] text-white/60">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Stake</span>
-                  <strong className="font-black text-[#1E3A8A]">{formatUsd(stakeUsd)}</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Players</span>
-                  <strong className="font-black text-[#1E3A8A]">{totalPlayers}</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Max players</span>
-                  <strong className="font-black text-[#1E3A8A]">{maxPlayers}</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Stake units</span>
-                  <strong className="font-black text-[#1E3A8A]">{chainStakeUnits}</strong>
+                  <strong className="font-black text-white">{formatUsd(stakeUsd)}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Pot</span>
-                  <strong className="font-black text-[#1E3A8A]">{formatUsd(totalPotUsd)}</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Tax</span>
-                  <strong className="font-black text-[#E11D48]">{formatUsd(taxUsd)}</strong>
+                  <strong className="font-black text-emerald-400">{formatUsd(totalPotUsd)}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Payout</span>
-                  <strong className="font-black text-[#0F766E]">{formatUsd(winnerPayoutUsd)}</strong>
+                  <strong className="font-black text-orange-400">{formatUsd(winnerPayoutUsd)}</strong>
                 </div>
               </div>
             </div>
@@ -422,7 +386,6 @@ function GameScreen({
 function StatsSection() {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLElement>(null);
-
   useGSAP(() => {
     if (!containerRef.current) return;
     gsap.fromTo(".stat-card",
