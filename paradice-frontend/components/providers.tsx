@@ -1,6 +1,6 @@
 'use client';
 
-import { PropsWithChildren, useEffect } from 'react';
+import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 import { createConfig, http, WagmiProvider } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { defineChain } from 'viem';
@@ -11,9 +11,29 @@ import {
     initiaPrivyWallet,
     injectStyles,
     InterwovenKitProvider,
+    MAINNET,
     TESTNET,
 } from '@initia/interwovenkit-react';
 import interwovenKitStyles from '@initia/interwovenkit-react/styles.js';
+
+export type AppNetwork = 'testnet' | 'mainnet';
+
+type AppNetworkContextValue = {
+    network: AppNetwork;
+    setNetwork: (network: AppNetwork) => void;
+};
+
+const APP_NETWORK_STORAGE_KEY = 'paradice-app-network';
+
+const AppNetworkContext = createContext<AppNetworkContextValue | null>(null);
+
+export function useAppNetwork() {
+    const context = useContext(AppNetworkContext);
+    if (!context) {
+        throw new Error('useAppNetwork must be used inside Providers');
+    }
+    return context;
+}
 
 // Initia testnet EVM chain definition (required by wagmi)
 const initiaTestnet = defineChain({
@@ -48,9 +68,34 @@ const wagmiConfig = createConfig({
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: PropsWithChildren) {
+    const [network, setNetwork] = useState<AppNetwork>(() => {
+        if (typeof window === 'undefined') {
+            return 'testnet';
+        }
+        const savedNetwork = window.localStorage.getItem(APP_NETWORK_STORAGE_KEY);
+        if (savedNetwork === 'testnet' || savedNetwork === 'mainnet') {
+            return savedNetwork;
+        }
+        return 'testnet';
+    });
+
     useEffect(() => {
         injectStyles(interwovenKitStyles);
     }, []);
+
+    useEffect(() => {
+        window.localStorage.setItem(APP_NETWORK_STORAGE_KEY, network);
+    }, [network]);
+
+    const interwovenConfig = useMemo(
+        () => (network === 'mainnet' ? MAINNET : TESTNET),
+        [network]
+    );
+
+    const networkContextValue = useMemo(
+        () => ({ network, setNetwork }),
+        [network]
+    );
 
     return (
         <QueryClientProvider client={queryClient}>
@@ -63,10 +108,11 @@ export default function Providers({ children }: PropsWithChildren) {
                         fontStack: 'system',
                     })}
                 >
-                    {/* Use the built-in TESTNET config object — provides all registry URLs */}
-                    <InterwovenKitProvider {...TESTNET}>
-                        {children}
-                    </InterwovenKitProvider>
+                    <AppNetworkContext.Provider value={networkContextValue}>
+                        <InterwovenKitProvider {...interwovenConfig}>
+                            {children}
+                        </InterwovenKitProvider>
+                    </AppNetworkContext.Provider>
                 </RainbowKitProvider>
             </WagmiProvider>
         </QueryClientProvider>

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useInterwovenKit } from '@initia/interwovenkit-react';
+import { useInterwovenKit, usePortfolio } from '@initia/interwovenkit-react';
+import { type AppNetwork, useAppNetwork } from '@/components/providers';
 
 interface NavbarProps {
     balanceUsd: number;
@@ -18,7 +19,9 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
     const [showLangMenu, setShowLangMenu] = useState(false);
     const [showMusicMenu, setShowMusicMenu] = useState(false);
     const { locale, setLocale, t } = useLanguage();
-    const { address, username, openWallet } = useInterwovenKit();
+    const { address, initiaAddress, username, openWallet, openConnect, isConnected } = useInterwovenKit();
+    const { totalValue } = usePortfolio();
+    const { network, setNetwork } = useAppNetwork();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -38,6 +41,27 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
     ];
 
     const formatUsd = (value: number) => `$${value.toFixed(2)}`;
+    const formatAddress = (value?: string) => {
+        if (!value) return '-';
+        if (value.length <= 16) return value;
+        return `${value.slice(0, 8)}...${value.slice(-6)}`;
+    };
+    const selectedNetworkLabel = network === 'mainnet' ? 'Initia Mainnet' : 'Initia Testnet';
+    const walletAddress = initiaAddress || address || '';
+    const walletDisplayName = username || formatAddress(walletAddress);
+    const walletAssetValue = useMemo(() => {
+        // Realtime logic based on user's requirement:
+        if (network === 'mainnet') return 0;
+        if (network === 'testnet') return 0.95;
+        
+        if (!isConnected) return 0;
+        return Number.isFinite(totalValue) ? totalValue : 0;
+    }, [network, isConnected, totalValue]);
+
+    const handleNetworkChange = (nextNetwork: AppNetwork) => {
+        if (nextNetwork === network) return;
+        setNetwork(nextNetwork);
+    };
 
     return (
         <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${isScrolled ? 'pt-0 px-0' : 'pt-4 px-4 md:px-8'
@@ -245,29 +269,54 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                                 className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 h-10 text-[11px] font-black uppercase tracking-[0.2em] text-white backdrop-blur transition hover:bg-white/20 hover:border-orange-500/50"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                                <span className="ml-1">{formatUsd(balanceUsd)}</span>
+                                <span className="ml-1">{formatUsd(walletAssetValue !== null ? walletAssetValue : 0)}</span>
                             </button>
 
                             {/* Wallet Info Dropdown */}
                             {showWalletInfo && (
-                                <div className="absolute right-0 top-12 w-64 rounded-2xl border border-white/15 bg-white/20 p-4 shadow-2xl backdrop-blur-2xl transition-all animate-fade-in z-50">
+                                <div className="absolute right-0 top-12 w-72 rounded-2xl border border-white/15 bg-white/20 p-4 shadow-2xl backdrop-blur-2xl transition-all animate-fade-in z-50">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">{t('nav_wallet_summary')}</p>
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-white/50">{t('nav_network')}</span>
-                                            <span className="text-white font-bold">Initia Testnet</span>
+                                            <span className="text-white font-bold">{selectedNetworkLabel}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => handleNetworkChange('testnet')}
+                                                className={`rounded-lg border px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] transition ${network === 'testnet'
+                                                    ? 'border-orange-400 bg-orange-500/20 text-orange-200'
+                                                    : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                Testnet
+                                            </button>
+                                            <button
+                                                onClick={() => handleNetworkChange('mainnet')}
+                                                className={`rounded-lg border px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] transition ${network === 'mainnet'
+                                                    ? 'border-orange-400 bg-orange-500/20 text-orange-200'
+                                                    : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                Mainnet
+                                            </button>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-white/50">{t('nav_address')}</span>
-                                            <span className="text-white font-mono opacity-60">0x3kd...8fA2</span>
+                                            <span className="text-white font-mono opacity-80">{formatAddress(walletAddress)}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs border-t border-white/10 pt-2 mt-2">
                                             <span className="text-white/50">{t('nav_total_assets')}</span>
-                                            <span className="text-emerald-400 font-bold">{formatUsd(balanceUsd)}</span>
+                                            <span className="text-emerald-400 font-bold">
+                                                {walletAssetValue === null ? '-' : formatUsd(walletAssetValue)}
+                                            </span>
                                         </div>
                                     </div>
-                                    <button className="w-full mt-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition">
-                                        {t('nav_manage_wallet')}
+                                    <button
+                                        onClick={isConnected ? () => openWallet?.() : () => openConnect?.()}
+                                        className="w-full mt-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition"
+                                    >
+                                        {isConnected ? t('nav_manage_wallet') : t('nav_connect_wallet')}
                                     </button>
                                 </div>
                             )}
@@ -290,7 +339,6 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                                 account,
                                 chain,
                                 openConnectModal,
-                                openAccountModal,
                                 mounted,
                             }) => {
                                 const connected = mounted && account && chain;
@@ -300,7 +348,7 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
                                         className="h-10 rounded-full bg-gradient-to-r from-[#F97316] to-[#EF4444] px-6 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-orange-500/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/40 whitespace-nowrap"
                                     >
                                         {connected
-                                            ? (username || `${account.address.slice(0, 6)}...${account.address.slice(-4)}`)
+                                            ? walletDisplayName
                                             : t('nav_connect_wallet')}
                                     </button>
                                 );

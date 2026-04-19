@@ -165,6 +165,9 @@ const translations: Translations = {
     mkt_wallet: { en: 'Wallet Address', id: 'Alamat Dompet' },
     mkt_buy_btn: { en: 'Buy', id: 'Beli' },
     mkt_all_cat: { en: 'All', id: 'Semua' },
+    mkt_nft_col: { en: 'NFT Collections', id: 'Koleksi NFT' },
+    mkt_music_col: { en: 'Music NFT Collections', id: 'Koleksi NFT Musik' },
+    mkt_sell: { en: 'Sell', id: 'Jual' },
 
     // Leaderboard
     // Leaderboard
