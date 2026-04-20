@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import LudoBoard from "@/components/LudoBoard";
+import LudoBoardWrapper from "@/components/LudoBoardWrapper";
 import Dice, { DiceHandle } from "@/components/Dice";
 import Navbar from "@/components/Navbar";
 import LiveChat from "@/components/LiveChat";
@@ -312,25 +312,12 @@ function GameScreen({
         </section>
 
         <section className="flex w-full justify-center xl:justify-start relative">
-          <div className="w-full max-w-[700px] rounded-[3rem] border border-white/10 bg-white/5 p-4 shadow-[0_40px_100px_rgba(0,0,0,0.5)] backdrop-blur-3xl sm:p-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4">
-               <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded">Bot</span>
-            </div>
-            <LudoBoard
-              gameState={state}
-              cfg={cfg}
-              movablePawnIds={movablePawnIds}
-              onPawnClick={handlePawnClick}
-            />
-            
-            {/* Turn Pill */}
-            {isPlayerTurn && (
-               <div className="absolute bottom-8 left-8 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-2xl">
-                  <span className="text-xs font-black text-slate-800 uppercase tracking-widest">You</span>
-                  <div className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md">TURN</div>
-               </div>
-            )}
-          </div>
+          <LudoBoardWrapper
+            gameState={state}
+            cfg={cfg}
+            movablePawnIds={movablePawnIds}
+            onPawnClick={handlePawnClick}
+          />
         </section>
 
         <aside className="w-full xl:w-[320px] xl:justify-self-end flex flex-col gap-6">

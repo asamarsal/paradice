@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import LudoBoard from "@/components/LudoBoard";
+import LudoBoardWrapper from "@/components/LudoBoardWrapper";
 import LiveChat from "@/components/LiveChat";
 import Dice, { DiceHandle } from "@/components/Dice";
 import Navbar from "@/components/Navbar";
@@ -307,14 +307,12 @@ function GameScreen({
         </section>
 
         <section className="flex w-full justify-center xl:justify-start">
-          <div className="w-full max-w-[550px] rounded-[2rem] border border-white/10 bg-white/5 p-2 shadow-2xl backdrop-blur-xl sm:p-3 relative">
-            <LudoBoard
-              gameState={state}
-              cfg={cfg}
-              movablePawnIds={movablePawnIds}
-              onPawnClick={handlePawnClick}
-            />
-          </div>
+          <LudoBoardWrapper
+            gameState={state}
+            cfg={cfg}
+            movablePawnIds={movablePawnIds}
+            onPawnClick={handlePawnClick}
+          />
         </section>
 
         <aside className="w-full xl:w-[280px] xl:justify-self-end mt-4 xl:mt-0">

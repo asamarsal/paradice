@@ -20,8 +20,8 @@ export default function Footer() {
     }, { scope: footerRef });
 
     return (
-        <div ref={footerRef} className="bg-[#1a1a1a]/80 w-full mt-auto relative z-20 border-t border-white/5 backdrop-blur-md">
-            <footer className="mx-auto w-full max-w-7xl px-4 pb-12 pt-16 md:px-8">
+        <div ref={footerRef} className="bg-[#1a1a1a]/80 w-full mt-auto relative border-t border-white/5 backdrop-blur-md">
+            <footer className="mx-auto w-full max-w-7xl px-4 pb-12 pt-8 md:px-8">
                 <div className="grid gap-10 md:grid-cols-4 md:gap-8">
                     <div className="footer-column-global">
                         <div className="flex items-center gap-3 mb-6">
