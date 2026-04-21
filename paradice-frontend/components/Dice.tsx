@@ -63,16 +63,19 @@ interface DiceProps {
     message?: string;
     value?: number | null;
     isBot?: boolean;
+    serverAuthoritative?: boolean;
+    onRollRequest?: () => void | Promise<void>;
 }
 
 const Dice = forwardRef<DiceHandle, DiceProps>(({
-    onRollResult, disabled, message, value: externalValue, isBot
+    onRollResult, disabled, message, value: externalValue, isBot, serverAuthoritative, onRollRequest
 }, ref) => {
     const [internalValue, setInternalValue] = useState(6);
     const value = externalValue ?? internalValue;
     const [isRolling, setIsRolling] = useState(false);
     const isRollingRef = useRef(false);
     const [isHolding, setIsHolding] = useState(false);
+    const [isAwaitingServer, setIsAwaitingServer] = useState(false);
     const [rotation, setRotation] = useState({ x: 165, y: 15, z: 0 });
 
     const getTargetOffset = (val: number) => {
@@ -105,7 +108,22 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
         return () => clearInterval(interval);
     }, [isHolding]);
 
+    const requestServerRoll = async () => {
+        if (!serverAuthoritative || !onRollRequest || isRollingRef.current || isAwaitingServer) return;
+        setIsAwaitingServer(true);
+        try {
+            await onRollRequest();
+        } finally {
+            setIsAwaitingServer(false);
+        }
+    };
+
     const rollDice = (forcedValue?: number) => {
+        if (forcedValue === undefined && serverAuthoritative) {
+            void requestServerRoll();
+            return;
+        }
+
         if (isRollingRef.current || (disabled && !isBot && forcedValue === undefined)) return;
         isRollingRef.current = true;
         setIsRolling(true);
@@ -134,13 +152,17 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
     }));
 
     const startHold = () => {
-        if (isRolling || disabled) return;
+        if (isRolling || isAwaitingServer || disabled) return;
         setIsHolding(true);
     };
 
     const finishHold = () => {
-        if (!isHolding || disabled) return;
+        if (!isHolding || isAwaitingServer || disabled) return;
         setIsHolding(false);
+        if (serverAuthoritative) {
+            void requestServerRoll();
+            return;
+        }
         rollDice();
     };
 
@@ -154,13 +176,13 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
                 onTouchEnd={finishHold}
                 onClick={() => {
                     // Prevent double-trigger from MouseUp and Click if already rolling
-                    if (!isRollingRef.current && !isHolding && !disabled) {
+                    if (!isRollingRef.current && !isHolding && !isAwaitingServer && !disabled) {
                         rollDice();
                     }
                 }}
-                disabled={isRolling || disabled}
+                disabled={isRolling || isAwaitingServer || disabled}
                 className={`w-20 h-20 relative outline-none select-none transition-transform
-                    ${disabled && !isRolling ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-95"}
+                    ${disabled && !isRolling && !isAwaitingServer ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-95"}
                 `}
                 style={{ perspective: "400px" }}
             >
@@ -183,9 +205,9 @@ const Dice = forwardRef<DiceHandle, DiceProps>(({
 
             <div className="flex flex-col items-center h-[80px]">
                 <span className="font-bold text-gray-700 uppercase tracking-widest text-sm text-center max-w-[150px]">
-                    {isHolding ? "RELEASING..." : (isRolling ? "ROLLING..." : (message || "HOLD TO SPIN"))}
+                    {isHolding ? "RELEASING..." : (isAwaitingServer ? "SYNCING..." : (isRolling ? "ROLLING..." : (message || "HOLD TO SPIN")))}
                 </span>
-                {!isRolling && !isHolding && value !== null && value !== undefined && (
+                {!isRolling && !isHolding && !isAwaitingServer && value !== null && value !== undefined && (
                     <span className="text-3xl font-black text-[#8B5CF6] mt-1">{value}</span>
                 )}
             </div>

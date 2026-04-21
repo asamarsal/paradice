@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -22,6 +22,16 @@ import {
   CreateGameMovePayload,
   modeToMaxPlayers,
 } from "@/lib/gameContractAdapter";
+import {
+  commitDiceRoom,
+  getDiceRoomHistory,
+  DiceRollResponse,
+  registerDicePlayerSeed,
+  revealDiceRoom,
+  rollDiceFromServer,
+} from "@/lib/diceRealtimeApi";
+import { connectGameRealtime } from "@/lib/gameRealtimeSocket";
+import { sha256Hex, verifyDiceRoll } from "@/lib/diceFairness";
 
 type ModeOption = {
   mode: GameMode;
@@ -75,6 +85,10 @@ type SettlementSummary = {
 
 const formatUsd = (value: number) => `$${value.toFixed(2)}`;
 const roundUsd = (value: number) => Number(value.toFixed(2));
+const normalizeNumber = (value: unknown): number | null => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 
 function GameScreen({
   mode,
@@ -128,13 +142,97 @@ function GameScreen({
   const humanPlayer = cfg.players.find((p) => p.type === "human" && p.active);
   const playerWon = humanPlayer ? state.winner === humanPlayer.color : false;
   const settlementReportedRef = useRef(false);
+  const revealReportedRef = useRef(false);
+  const processedNonceRef = useRef<Set<number>>(new Set());
   const [restartNotice, setRestartNotice] = useState<string | null>(null);
   const [isRematchStarting, setIsRematchStarting] = useState(false);
+  const [isDiceSyncReady, setIsDiceSyncReady] = useState(false);
+  const [isServerRollPending, setIsServerRollPending] = useState(false);
+  const [diceSyncNotice, setDiceSyncNotice] = useState<string | null>(null);
+  const [fairnessNotice, setFairnessNotice] = useState<string | null>(null);
+
+  const applyServerRoll = useCallback((roll: DiceRollResponse) => {
+    if (state.phase !== "waiting_roll") return;
+    if (processedNonceRef.current.has(roll.nonce)) return;
+    processedNonceRef.current.add(roll.nonce);
+    diceRef.current?.rollDice(roll.dice_value);
+  }, [state.phase]);
+
+  const requestServerRoll = useCallback(async () => {
+    if (!isDiceSyncReady || isServerRollPending) return;
+
+    setIsServerRollPending(true);
+    try {
+      const payload = await rollDiceFromServer(sessionRef, state.currentPlayer);
+      applyServerRoll(payload);
+      setDiceSyncNotice(null);
+    } catch {
+      setDiceSyncNotice("Failed to fetch dice result from backend.");
+    } finally {
+      setIsServerRollPending(false);
+    }
+  }, [applyServerRoll, isDiceSyncReady, isServerRollPending, sessionRef, state.currentPlayer]);
 
   useEffect(() => {
-    if (state.phase === "waiting_roll" && isBot) {
+    let cancelled = false;
+
+    processedNonceRef.current.clear();
+    setIsDiceSyncReady(false);
+    setDiceSyncNotice("Syncing fair dice room...");
+    setFairnessNotice(null);
+
+    const bootstrap = async () => {
+      try {
+        const commitPayload = await commitDiceRoom(sessionRef);
+        const activePlayerKeys = cfg.players.filter((player) => player.active).map((player) => player.color);
+
+        await Promise.all(activePlayerKeys.map((playerKey) => registerDicePlayerSeed(sessionRef, playerKey)));
+
+        if (cancelled) return;
+
+        setIsDiceSyncReady(true);
+        setDiceSyncNotice(`Fair dice ready (${commitPayload.server_seed_hash.slice(0, 10)}...)`);
+      } catch {
+        if (cancelled) return;
+        setDiceSyncNotice("Failed to sync fair dice. Check backend connection.");
+      }
+    };
+
+    void bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cfg.players, sessionRef]);
+
+  useEffect(() => {
+    return connectGameRealtime(sessionRef, (eventName, payload) => {
+      if (eventName !== "dice.rolled") return;
+
+      const nonce = normalizeNumber(payload.nonce);
+      const diceValue = normalizeNumber(payload.dice_value);
+      const playerKey = typeof payload.player_key === "string" ? payload.player_key : null;
+      const serverSeedHash = typeof payload.server_seed_hash === "string" ? payload.server_seed_hash : "";
+      const resultHash = typeof payload.result_hash === "string" ? payload.result_hash : "";
+
+      if (!nonce || !diceValue || !playerKey) return;
+      if (diceValue < 1 || diceValue > 6) return;
+
+      applyServerRoll({
+        room_id: sessionRef,
+        player_key: playerKey,
+        server_seed_hash: serverSeedHash,
+        nonce,
+        result_hash: resultHash,
+        dice_value: diceValue,
+      });
+    });
+  }, [applyServerRoll, sessionRef]);
+
+  useEffect(() => {
+    if (state.phase === "waiting_roll" && isBot && isDiceSyncReady && !isServerRollPending) {
       const timer = setTimeout(() => {
-        diceRef.current?.rollDice();
+        void requestServerRoll();
       }, 1000);
       return () => clearTimeout(timer);
     }
@@ -152,7 +250,7 @@ function GameScreen({
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [state.phase, isBot, runBotTurn, executeBotMove, state.diceValue]);
+  }, [state.phase, isBot, runBotTurn, executeBotMove, state.diceValue, isDiceSyncReady, isServerRollPending, requestServerRoll]);
 
   useEffect(() => {
     if (state.phase !== "game_over" || settlementReportedRef.current) return;
@@ -166,14 +264,47 @@ function GameScreen({
     });
   }, [state.phase, onGameSettled, stakeUsd, totalPotUsd, taxUsd, winnerPayoutUsd, playerWon]);
 
+  useEffect(() => {
+    if (state.phase !== "game_over" || revealReportedRef.current) return;
+    revealReportedRef.current = true;
+
+    const runRevealAndVerify = async () => {
+      try {
+        const revealed = await revealDiceRoom(sessionRef);
+        const localHash = await sha256Hex(revealed.server_seed);
+        if (localHash !== revealed.server_seed_hash) {
+          setFairnessNotice("Fairness failed: reveal hash mismatch.");
+          return;
+        }
+
+        const history = await getDiceRoomHistory(sessionRef);
+        const checks = await Promise.all(history.rolls.map((roll) => verifyDiceRoll(revealed.server_seed, roll)));
+        const allValid = checks.every((check) => check.hashMatches && check.diceMatches);
+
+        setFairnessNotice(allValid ? "Fairness check passed for all dice rolls." : "Fairness check failed for one or more rolls.");
+      } catch {
+        setFairnessNotice("Fairness verification unavailable (backend/network issue).");
+      }
+    };
+
+    void runRevealAndVerify();
+  }, [sessionRef, state.phase]);
+
   const isPlayerTurn = currentPlayerCfg?.type === "human";
-  const canRoll = isPlayerTurn && state.phase === "waiting_roll";
+  const canRoll = isPlayerTurn && state.phase === "waiting_roll" && isDiceSyncReady && !isServerRollPending;
   const validMoves =
     state.phase === "waiting_move" && state.diceValue
       ? getValidMoves(state.pawns, state.currentPlayer, state.diceValue)
       : [];
   const movablePawnIds = validMoves.map((m) => m.pawn.id);
   const modeLabel = mode === "2player" ? "2 Players" : "4 Players";
+  const diceMessage = !isDiceSyncReady
+    ? "SYNCING..."
+    : isServerRollPending
+      ? "WAITING SERVER..."
+      : isBot
+        ? "BOT TURN"
+        : (canRoll ? "HOLD TO ROLL" : "WAITING...");
   const compactSessionRef =
     sessionRef.length > 16 ? `${sessionRef.slice(0, 12)}...` : sessionRef;
   const compactTxHash =
@@ -190,7 +321,10 @@ function GameScreen({
     }
 
     settlementReportedRef.current = false;
+    revealReportedRef.current = false;
+    processedNonceRef.current.clear();
     setRestartNotice(null);
+    setFairnessNotice(null);
   };
 
   return (
@@ -226,6 +360,19 @@ function GameScreen({
           {restartNotice && (
             <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
               {restartNotice}
+            </p>
+          )}
+          {diceSyncNotice && (
+            <p className="mb-4 rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800">
+              {diceSyncNotice}
+            </p>
+          )}
+          {fairnessNotice && (
+            <p className={`mb-4 rounded-xl border px-3 py-2 text-xs font-semibold ${fairnessNotice.includes("passed")
+                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                : "border-rose-300 bg-rose-50 text-rose-800"
+              }`}>
+              {fairnessNotice}
             </p>
           )}
 
@@ -266,7 +413,9 @@ function GameScreen({
             disabled={!canRoll}
             value={displayedDiceValue}
             isBot={isBot}
-            message={isBot ? "BOT TURN" : canRoll ? "HOLD TO SPIN" : "WAITING..."}
+            message={diceMessage}
+            serverAuthoritative
+            onRollRequest={requestServerRoll}
           />
 
           <div className="grid gap-2 rounded-[1.25rem] border border-white/10 bg-white/5 p-3 text-[11px] text-white/60">

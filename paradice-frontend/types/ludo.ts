@@ -83,7 +83,7 @@ export const MAIN_TRACK = [
     4, 3
 ];
 
-export const SAFE_ZONES = new Set([2, 5, 9, 15, 18, 22, 28, 31, 34, 39, 41, 44, 54, 59]);
+export const SAFE_ZONES = new Set([5, 18, 31, 44]);
 
 // ─── Fixed path data per board slot ──────────────────────────────────────────
 // startCell = cell to the RIGHT of the base entrance (where pawn exits on 6)
@@ -106,17 +106,17 @@ export const SLOT_HOME: Record<BoardSlot, [number, number][]> = {
 
 // ─── Mode configurations ─────────────────────────────────────────────────────
 export const MODE_2P: SlotConfig[] = [
-    { slot: "TL", color: "red", type: "none", active: false, label: "" },
-    { slot: "TR", color: "green", type: "bot", active: true, label: "Bot" },
-    { slot: "BL", color: "blue", type: "human", active: true, label: "You" },
-    { slot: "BR", color: "yellow", type: "none", active: false, label: "" },
+    { slot: "TL", color: "green", type: "bot", active: true, label: "Bot" },
+    { slot: "TR", color: "yellow", type: "none", active: false, label: "" },
+    { slot: "BL", color: "red", type: "none", active: false, label: "" },
+    { slot: "BR", color: "blue", type: "human", active: true, label: "You" },
 ];
 
 export const MODE_4P: SlotConfig[] = [
-    { slot: "TL", color: "blue", type: "bot", active: true, label: "Bot1" },
-    { slot: "TR", color: "red", type: "bot", active: true, label: "Bot2" },
-    { slot: "BL", color: "yellow", type: "human", active: true, label: "You" },
-    { slot: "BR", color: "green", type: "bot", active: true, label: "Bot3" },
+    { slot: "TL", color: "green", type: "bot", active: true, label: "Bot1" },
+    { slot: "TR", color: "yellow", type: "human", active: true, label: "You" },
+    { slot: "BL", color: "red", type: "bot", active: true, label: "Bot2" },
+    { slot: "BR", color: "blue", type: "bot", active: true, label: "Bot3" },
 ];
 
 // ─── Config builder ──────────────────────────────────────────────────────────
@@ -135,8 +135,8 @@ export function buildGameConfig(mode: GameMode): BuiltGameConfig {
     const homePositions = {} as Record<PlayerColor, [number, number][]>;
     const turnOrder: PlayerColor[] = [];
 
-    // Turn order: BL first (human), then clockwise
-    const slotOrder: BoardSlot[] = ["BL", "TR", "TL", "BR"]; // BL=human first
+    // Build board/color mapping by slot order
+    const slotOrder: BoardSlot[] = ["BL", "TR", "TL", "BR"];
     for (const s of slotOrder) {
         const sc = slots.find(sl => sl.slot === s)!;
         const path = SLOT_PATHS[sc.slot];
@@ -144,6 +144,17 @@ export function buildGameConfig(mode: GameMode): BuiltGameConfig {
         startOffset[sc.color] = path.startOffset;
         homePositions[sc.color] = SLOT_HOME[sc.slot];
         if (sc.active) turnOrder.push(sc.color);
+    }
+
+    // Keep turn flow predictable: active human starts first when present.
+    const humanColor = slots.find(sl => sl.active && sl.type === "human")?.color;
+    if (humanColor) {
+        const humanIdx = turnOrder.indexOf(humanColor);
+        if (humanIdx > 0) {
+            const rotated = turnOrder.slice(humanIdx).concat(turnOrder.slice(0, humanIdx));
+            turnOrder.length = 0;
+            turnOrder.push(...rotated);
+        }
     }
 
     return { players: slots, config, startOffset, homePositions, turnOrder };

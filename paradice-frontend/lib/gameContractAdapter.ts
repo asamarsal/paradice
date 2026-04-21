@@ -40,13 +40,21 @@ export function buildCreateGamePayload(mode: GameMode, stakeUsd: number): Create
   };
 }
 
+function createSessionRef(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 // Temporary mock adapter. Replace internals with real wallet tx call later.
 export async function createGameSession(mode: GameMode, stakeUsd: number): Promise<CreateGameSessionResult> {
   const payload = buildCreateGamePayload(mode, stakeUsd);
 
   await new Promise((resolve) => setTimeout(resolve, 280));
 
-  const sessionRef = `session-${Date.now().toString(36)}`;
+  const sessionRef = createSessionRef();
   const txHash = `0xmock${Math.random().toString(16).slice(2, 12)}`;
 
   return {

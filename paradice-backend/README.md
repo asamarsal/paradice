@@ -56,3 +56,28 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Realtime Dice API (Commit-Reveal)
+
+Available endpoints:
+
+- `GET /api/realtime/rooms/{roomId}/history`
+- `POST /api/realtime/rooms/{roomId}/commit`
+- `POST /api/realtime/rooms/{roomId}/player-seed`
+- `POST /api/realtime/rooms/{roomId}/roll`
+- `POST /api/realtime/rooms/{roomId}/reveal`
+
+Request example (`player-seed` / `roll`):
+
+```json
+{
+  "player_key": "blue",
+  "player_seed": "optional-seed"
+}
+```
+
+Broadcast events emitted by backend:
+
+- `dice.commit`
+- `dice.rolled`
+- `dice.revealed`
