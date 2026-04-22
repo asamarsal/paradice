@@ -13,6 +13,7 @@ function randomWalletAddress(): string {
 }
 
 export default function LobbyPage() {
+    const ROOMS_PER_PAGE = 2;
     const searchParams = useSearchParams();
     const [players, setPlayers] = useState<2 | 4>(2);
     const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
@@ -25,12 +26,12 @@ export default function LobbyPage() {
     const [createdRoom, setCreatedRoom] = useState<RoomDetail | null>(null);
     const [isCreatingRoom, setIsCreatingRoom] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
-    const [joinCode, setJoinCode] = useState("");
     const [joinPassword, setJoinPassword] = useState("");
     const [isJoiningRoom, setIsJoiningRoom] = useState(false);
     const [joinError, setJoinError] = useState<string | null>(null);
     const [publicRooms, setPublicRooms] = useState<RoomListItem[]>([]);
     const [isPublicRoomsLoading, setIsPublicRoomsLoading] = useState(true);
+    const [publicRoomsPage, setPublicRoomsPage] = useState(1);
     const [deepLinkInfo, setDeepLinkInfo] = useState<string | null>(null);
     const autoJoinAttemptedRoomRef = useRef<string | null>(null);
 
@@ -57,8 +58,6 @@ export default function LobbyPage() {
     useEffect(() => {
         const roomFromQuery = searchParams.get("room");
         if (!roomFromQuery) return;
-
-        setJoinCode(roomFromQuery.trim().toUpperCase());
         const passwordFromQuery = searchParams.get("password");
         if (passwordFromQuery) {
             setJoinPassword(passwordFromQuery.trim());
@@ -138,6 +137,17 @@ export default function LobbyPage() {
         };
     }, []);
 
+    const totalPublicRoomPages = Math.max(1, Math.ceil(publicRooms.length / ROOMS_PER_PAGE));
+    const normalizedPublicRoomsPage = Math.min(publicRoomsPage, totalPublicRoomPages);
+    const publicRoomsStartIndex = (normalizedPublicRoomsPage - 1) * ROOMS_PER_PAGE;
+    const pagedPublicRooms = publicRooms.slice(publicRoomsStartIndex, publicRoomsStartIndex + ROOMS_PER_PAGE);
+
+    useEffect(() => {
+        if (publicRoomsPage !== normalizedPublicRoomsPage) {
+            setPublicRoomsPage(normalizedPublicRoomsPage);
+        }
+    }, [publicRoomsPage, normalizedPublicRoomsPage]);
+
     useEffect(() => {
         if (!isRoomModalOpen || !createdRoom?.room_code) return;
 
@@ -178,7 +188,6 @@ export default function LobbyPage() {
             });
 
             setCreatedRoom(room);
-            setJoinCode(room.room_code);
             setIsRoomModalOpen(true);
         } catch (error) {
             setCreateError(error instanceof Error ? error.message : "Gagal membuat room.");
@@ -187,15 +196,9 @@ export default function LobbyPage() {
         }
     };
 
-    const handleJoinRoom = async () => {
+    const joinRoomByCode = async (roomCode: string, passwordInput?: string) => {
         if (!walletAddress) {
             setJoinError("Wallet belum siap. Reload halaman sekali lagi.");
-            return;
-        }
-
-        const sanitizedCode = joinCode.trim().toUpperCase();
-        if (!sanitizedCode) {
-            setJoinError("Masukkan kode room terlebih dahulu.");
             return;
         }
 
@@ -204,17 +207,16 @@ export default function LobbyPage() {
 
         try {
             const room = await joinRoom({
-                roomCode: sanitizedCode,
+                roomCode,
                 walletAddress,
                 username,
-                password: joinPassword.trim() || undefined,
+                password: passwordInput,
             });
 
             setCreatedRoom(room);
             setPlayers(room.max_players);
             setStakeAmount(room.entry_fee);
             setIsPrivateRoom(room.is_private);
-            setJoinCode(room.room_code);
             setIsRoomModalOpen(true);
         } catch (error) {
             setJoinError(error instanceof Error ? error.message : "Gagal join room.");
@@ -275,7 +277,7 @@ export default function LobbyPage() {
                                 <button className="pb-3 text-white/50 hover:text-white/80 font-bold px-2 transition-colors">Private</button>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                            <div className="grid grid-cols-2 gap-4 mb-8">
                                 <div className="rounded-3xl border border-white/5 bg-white/5 p-5 transition-all hover:bg-white/10 hover:border-orange-500/20 group shadow-lg">
                                     <div className="flex justify-between items-start mb-5">
                                         <div>
@@ -333,6 +335,97 @@ export default function LobbyPage() {
                                 </div>
                             </div>
 
+                            <div className="mb-6 rounded-2xl border border-white/10 bg-black/20 p-4">
+                                <div className="flex items-center justify-between gap-2 mb-3">
+                                    <p className="text-sm font-semibold text-white/80">Public Rooms</p>
+                                    <div className="flex items-center gap-2">
+                                        {!isPublicRoomsLoading && (
+                                            <p className="text-[11px] text-white/50">{publicRooms.length} room</p>
+                                        )}
+                                        {!isPublicRoomsLoading && publicRooms.length > ROOMS_PER_PAGE && (
+                                            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/20 px-2 py-1">
+                                                <button
+                                                    type="button"
+                                                    disabled={normalizedPublicRoomsPage <= 1}
+                                                    onClick={() => setPublicRoomsPage((prev) => Math.max(1, prev - 1))}
+                                                    className="rounded-md border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/80 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                                >
+                                                    Prev
+                                                </button>
+                                                <p className="text-[10px] font-semibold text-white/70 min-w-[48px] text-center">
+                                                    {normalizedPublicRoomsPage}/{totalPublicRoomPages}
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    disabled={normalizedPublicRoomsPage >= totalPublicRoomPages}
+                                                    onClick={() => setPublicRoomsPage((prev) => Math.min(totalPublicRoomPages, prev + 1))}
+                                                    className="rounded-md border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/80 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {isPublicRoomsLoading && (
+                                        <p className="text-xs text-white/50">Loading public rooms...</p>
+                                    )}
+                                    {!isPublicRoomsLoading && publicRooms.length === 0 && (
+                                        <p className="text-xs text-white/50">Belum ada room publik aktif.</p>
+                                    )}
+                                    <div className="grid w-full grid-cols-2 gap-3">
+                                        {pagedPublicRooms.map((room, index) => (
+                                            <div
+                                                key={room.room_code}
+                                                onClick={() => {
+                                                    setJoinError(null);
+                                                }}
+                                                className="group w-full cursor-pointer rounded-2xl border border-white/15 bg-gradient-to-br from-[#402331]/70 via-[#2f2232]/70 to-[#3f2a22]/70 p-4 text-left transition-all hover:border-orange-400/50 hover:shadow-[0_12px_28px_rgba(249,115,22,0.18)]"
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-2xl leading-none text-orange-300">C</p>
+                                                        <p className="mt-1 text-lg font-black text-white">Classic</p>
+                                                    </div>
+                                                    <p className="text-3xl font-black text-orange-300">
+                                                        {room.entry_fee.toFixed(2)}
+                                                    </p>
+                                                </div>
+
+                                                <div className="mt-2 inline-flex items-center rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[11px] font-semibold text-white/80">
+                                                    {room.player_count}/{room.max_players} players
+                                                </div>
+
+                                                <div className="mt-3 flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div className="h-8 w-8 overflow-hidden rounded-full border border-orange-300/30 bg-black/40">
+                                                            <img
+                                                                src={`/img/avatar-${(index % 3) + 1}.png`}
+                                                                alt={room.room_code}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <p className="truncate text-xs font-bold text-white/80">{room.room_code}</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        disabled={isJoiningRoom}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            void joinRoomByCode(room.room_code);
+                                                        }}
+                                                        className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-5 py-1.5 text-sm font-black text-white transition-transform hover:scale-105 disabled:opacity-60"
+                                                    >
+                                                        Join
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="mt-auto pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
                                 <div className="text-white/40 text-[13px] flex gap-4 items-center font-bold">
                                     <span>Mode: <strong className="text-white">{players} Players</strong></span>
@@ -347,11 +440,10 @@ export default function LobbyPage() {
                                             event.preventDefault();
                                         }
                                     }}
-                                    className={`w-full md:w-auto rounded-[2rem] px-12 py-4 text-sm font-black uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-3 ${
-                                        canUseStartButton
-                                            ? "bg-gradient-to-r from-orange-600 via-orange-500 to-red-600 hover:brightness-110 text-white shadow-[0_10px_40px_rgba(249,115,22,0.4)]"
-                                            : "bg-white/10 border border-white/10 text-white/40 cursor-not-allowed"
-                                    }`}
+                                    className={`w-full md:w-auto rounded-[2rem] px-12 py-4 text-sm font-black uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-3 ${canUseStartButton
+                                        ? "bg-gradient-to-r from-orange-600 via-orange-500 to-red-600 hover:brightness-110 text-white shadow-[0_10px_40px_rgba(249,115,22,0.4)]"
+                                        : "bg-white/10 border border-white/10 text-white/40 cursor-not-allowed"
+                                        }`}
                                 >
                                     {canUseStartButton ? "START MATCH" : `WAITING ${activeRoomPlayerCount}/${createdRoom?.max_players}`}
                                 </Link>
@@ -362,7 +454,7 @@ export default function LobbyPage() {
                     <div className="w-full lg:w-[350px] shrink-0 rounded-[2.5rem] border border-white/10 bg-[#1a111c]/60 backdrop-blur-[30px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-8 relative overflow-hidden transition-all duration-300 my-2">
                         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-orange-500/10 to-transparent pointer-events-none" />
 
-                        <h2 className="text-xl font-bold text-white mb-5">Find or Create a Room</h2>
+                        <h2 className="text-xl font-bold text-white mb-5">Create a Room</h2>
 
                         <div className="space-y-5">
                             <div className="flex items-center justify-between">
@@ -454,65 +546,13 @@ export default function LobbyPage() {
                                 </p>
                             )}
 
-                            <div className="pt-4 border-t border-white/10 space-y-3">
-                                <p className="text-sm font-semibold text-white/80">Join Room</p>
-                                <input
-                                    type="text"
-                                    value={joinCode}
-                                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                                    placeholder="Room code (ex: PARA-ABCD)"
-                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 transition-colors"
-                                />
-                                <input
-                                    type="text"
-                                    value={joinPassword}
-                                    onChange={(e) => setJoinPassword(e.target.value)}
-                                    placeholder="Password (optional)"
-                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 transition-colors"
-                                />
-                                <button
-                                    onClick={handleJoinRoom}
-                                    disabled={isJoiningRoom}
-                                    className="w-full rounded-2xl bg-white/10 py-3 text-sm font-bold text-white border border-white/10 hover:bg-white/15 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    {isJoiningRoom ? "Joining..." : "Join Room"}
-                                </button>
-                                {joinError && (
-                                    <p className="text-center text-xs text-rose-300 rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 break-words">
-                                        {joinError}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="pt-4 border-t border-white/10 space-y-3">
-                                <p className="text-sm font-semibold text-white/80">Public Rooms</p>
-                                <div className="max-h-44 overflow-y-auto space-y-2 pr-1">
-                                    {isPublicRoomsLoading && (
-                                        <p className="text-xs text-white/50">Loading public rooms...</p>
-                                    )}
-                                    {!isPublicRoomsLoading && publicRooms.length === 0 && (
-                                        <p className="text-xs text-white/50">Belum ada room publik aktif.</p>
-                                    )}
-                                    {publicRooms.map((room) => (
-                                        <button
-                                            key={room.room_code}
-                                            onClick={() => {
-                                                setJoinCode(room.room_code);
-                                                setJoinError(null);
-                                            }}
-                                            className="w-full rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3 py-2 text-left transition-colors"
-                                        >
-                                            <p className="text-xs font-black text-orange-300">{room.room_code}</p>
-                                            <p className="text-[11px] text-white/70 mt-0.5">
-                                                {room.player_count}/{room.max_players} players • Stake {room.entry_fee.toFixed(2)} INIT
-                                            </p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
+                            {joinError && (
+                                <p className="text-center text-xs text-rose-300 rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-2 break-words">
+                                    {joinError}
+                                </p>
+                            )}
                             <p className="text-center text-xs text-white/50 leading-relaxed px-2">
-                                Invite friends or play solo. Private rooms need a password to join.
+                                Join room tersedia dari kartu di sebelah kiri. Private rooms butuh password.
                             </p>
                         </div>
                     </div>
