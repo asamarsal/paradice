@@ -96,7 +96,6 @@ export default function LobbyPage() {
                 setPlayers(room.max_players);
                 setStakeAmount(room.entry_fee);
                 setIsPrivateRoom(room.is_private);
-                setJoinCode(room.room_code);
                 setIsRoomModalOpen(true);
                 setDeepLinkInfo(`Berhasil masuk ke room ${room.room_code}.`);
             } catch (error) {

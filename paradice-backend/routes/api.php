@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DiceRealtimeController;
+use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\RoomController;
 use Illuminate\Support\Facades\Route;
 
@@ -10,6 +11,7 @@ Route::get('/rooms/{roomCode}', [RoomController::class, 'show'])
     ->where(['roomCode' => '[A-Za-z0-9\-]+' ]);
 Route::post('/rooms/{roomCode}/join', [RoomController::class, 'join'])
     ->where(['roomCode' => '[A-Za-z0-9\-]+' ]);
+Route::post('/rewards/winner-nft/claim', [RewardController::class, 'claimWinnerNft']);
 
 Route::prefix('realtime/rooms/{roomId}')
     ->where(['roomId' => '[A-Za-z0-9\-\._]+'])

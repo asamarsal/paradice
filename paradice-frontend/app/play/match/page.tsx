@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { useInterwovenKit } from "@initia/interwovenkit-react";
 import LudoBoardWrapper from "@/components/LudoBoardWrapper";
 import Dice, { DiceHandle } from "@/components/Dice";
 import Navbar from "@/components/Navbar";
@@ -32,6 +33,7 @@ import {
 } from "@/lib/diceRealtimeApi";
 import { connectGameRealtime } from "@/lib/gameRealtimeSocket";
 import { sha256Hex, verifyDiceRoll } from "@/lib/diceFairness";
+import { claimWinnerNft } from "@/lib/rewardApi";
 
 type ModeOption = {
   mode: GameMode;
@@ -42,7 +44,7 @@ type ModeOption = {
   details: string;
 };
 
-const MODE_OPTIONS: any[] = [
+const MODE_OPTIONS: Pick<ModeOption, "mode" | "accent">[] = [
   {
     mode: "2player",
     accent: "from-[#2563EB] via-[#8B5CF6] to-[#22C55E]",
@@ -98,6 +100,7 @@ const normalizeNumber = (value: unknown): number | null => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
+const createGuestWalletAddress = (): string => `init1${Math.random().toString(36).slice(2, 14)}`;
 
 function GameScreen({
   mode,
@@ -159,6 +162,11 @@ function GameScreen({
   const [isServerRollPending, setIsServerRollPending] = useState(false);
   const [diceSyncNotice, setDiceSyncNotice] = useState<string | null>(null);
   const [fairnessNotice, setFairnessNotice] = useState<string | null>(null);
+  const [guestWalletAddress, setGuestWalletAddress] = useState("");
+  const [isClaimingWinnerNft, setIsClaimingWinnerNft] = useState(false);
+  const [winnerNftClaimNotice, setWinnerNftClaimNotice] = useState<string | null>(null);
+  const [winnerNftClaimed, setWinnerNftClaimed] = useState(false);
+  const { address, initiaAddress, username } = useInterwovenKit();
 
   const applyServerRoll = useCallback((roll: DiceRollResponse) => {
     if (state.phase !== "waiting_roll") return;
@@ -299,6 +307,25 @@ function GameScreen({
     void runRevealAndVerify();
   }, [sessionRef, state.phase]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const storageKey = "paradice_guest_wallet";
+    const existing = window.localStorage.getItem(storageKey);
+
+    if (existing) {
+      setGuestWalletAddress(existing);
+      return;
+    }
+
+    const generated = createGuestWalletAddress();
+    window.localStorage.setItem(storageKey, generated);
+    setGuestWalletAddress(generated);
+  }, []);
+
+  const winnerWalletAddress = (initiaAddress || address || guestWalletAddress || "").trim();
+  const winnerUsername = (username || "Paradice Player").trim();
+
   const isPlayerTurn = currentPlayerCfg?.type === "human";
   const canRoll = isPlayerTurn && state.phase === "waiting_roll" && isDiceSyncReady && !isServerRollPending;
   const validMoves =
@@ -319,6 +346,39 @@ function GameScreen({
   const compactTxHash =
     txHash.length > 16 ? `${txHash.slice(0, 12)}...${txHash.slice(-4)}` : txHash;
 
+  const handleClaimWinnerNft = useCallback(async () => {
+    if (state.phase !== "game_over" || !playerWon) return;
+    if (!winnerWalletAddress) {
+      setWinnerNftClaimNotice("Wallet belum terdeteksi. Silakan connect wallet dulu.");
+      return;
+    }
+
+    setIsClaimingWinnerNft(true);
+    setWinnerNftClaimNotice(null);
+
+    try {
+      const response = await claimWinnerNft({
+        walletAddress: winnerWalletAddress,
+        username: winnerUsername,
+        sessionRef,
+        mode,
+        stakeUsd,
+        playerWon,
+      });
+
+      setWinnerNftClaimed(true);
+      setWinnerNftClaimNotice(
+        response.already_claimed
+          ? `Winner NFT sudah pernah diklaim. Tx: ${response.mint_tx_hash}`
+          : `Winner NFT berhasil di-mint. Tx: ${response.mint_tx_hash}`
+      );
+    } catch (error) {
+      setWinnerNftClaimNotice(error instanceof Error ? error.message : "Gagal claim winner NFT.");
+    } finally {
+      setIsClaimingWinnerNft(false);
+    }
+  }, [mode, playerWon, sessionRef, stakeUsd, state.phase, winnerUsername, winnerWalletAddress]);
+
   const handleRestart = async () => {
     setIsRematchStarting(true);
     const result = await onRequestRematchStake(stakeUsd, mode);
@@ -334,6 +394,8 @@ function GameScreen({
     processedNonceRef.current.clear();
     setRestartNotice(null);
     setFairnessNotice(null);
+    setWinnerNftClaimed(false);
+    setWinnerNftClaimNotice(null);
   };
 
   return (
@@ -453,16 +515,41 @@ function GameScreen({
           </div>
 
           {state.phase === "game_over" && (
-            <div
-              className={`mt-4 rounded-[1.25rem] border px-4 py-3 text-sm font-semibold ${playerWon
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                : "border-rose-500/40 bg-rose-500/10 text-rose-300"
-                }`}
-            >
-              {playerWon
-                ? t('bet_win_toast').replace('${amount}', formatUsd(winnerPayoutUsd))
-                : t('bet_lose_toast').replace('${amount}', formatUsd(stakeUsd))}
-            </div>
+            <>
+              <div
+                className={`mt-4 rounded-[1.25rem] border px-4 py-3 text-sm font-semibold ${playerWon
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                  : "border-rose-500/40 bg-rose-500/10 text-rose-300"
+                  }`}
+              >
+                {playerWon
+                  ? t('bet_win_toast').replace('${amount}', formatUsd(winnerPayoutUsd))
+                  : t('bet_lose_toast').replace('${amount}', formatUsd(stakeUsd))}
+              </div>
+
+              {playerWon && (
+                <div className="mt-3 rounded-[1.25rem] border border-amber-400/35 bg-amber-500/10 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-300">Winner NFT</p>
+                      <p className="mt-1 text-xs font-semibold text-amber-100/90">Klaim NFT pemenang untuk match ini.</p>
+                    </div>
+                    <button
+                      onClick={() => void handleClaimWinnerNft()}
+                      disabled={winnerNftClaimed || isClaimingWinnerNft}
+                      className="rounded-full border border-amber-300/40 bg-amber-400/20 px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-amber-100 transition hover:bg-amber-300/30 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {winnerNftClaimed ? "Claimed" : isClaimingWinnerNft ? "Claiming..." : "Claim NFT"}
+                    </button>
+                  </div>
+                  {winnerNftClaimNotice && (
+                    <p className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold text-white/85">
+                      {winnerNftClaimNotice}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </section>
 
@@ -646,7 +733,7 @@ function MatchHistorySection() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef as any} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
+    <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
       <div className="mb-10 text-center md:text-left">
         <span className="inline-block rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-blue-300 backdrop-blur">{t('tx_onchain')}</span>
         <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">{t('tx_match_history')}</h2>
@@ -771,7 +858,7 @@ function NFTRewardsSection() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef as any} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
+    <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-7xl px-4 py-14 md:px-8">
       <div className="mb-10 text-center">
         <span className="inline-block rounded-full border border-purple-400/30 bg-purple-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.4em] text-purple-300 backdrop-blur">{t('nft_badge')}</span>
         <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">{t('nft_title_1')} <span className="bg-gradient-to-r from-purple-300 to-pink-400 bg-clip-text text-transparent">{t('nft_title_2')}</span></h2>
@@ -841,7 +928,7 @@ function GameRules() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef as any} className="relative z-10 mx-auto w-full max-w-5xl px-4 py-16 md:px-8">
+    <section ref={containerRef} className="relative z-10 mx-auto w-full max-w-5xl px-4 py-16 md:px-8">
       <div className="rule-header mb-10 text-center md:text-left">
         <h2 className="text-3xl font-black text-amber-300 md:text-4xl drop-shadow-sm"><span className="mr-2">📖</span> {t('gr_badge')}</h2>
         <p className="mt-2 text-white/60 font-medium">{t('gr_desc')}</p>
@@ -866,7 +953,7 @@ function GameRules() {
 
 function CTAAndFooter() {
   const { t } = useLanguage();
-  const containerRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
     gsap.fromTo(".cta-box",
@@ -880,7 +967,7 @@ function CTAAndFooter() {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef as any} className="w-full bg-transparent mt-12 relative z-20">
+    <div ref={containerRef} className="w-full bg-transparent mt-12 relative z-20">
       <section className="mx-auto w-full max-w-7xl px-4 py-16 md:px-8">
         <div className="cta-box flex flex-col items-center justify-center text-center gap-8 rounded-[1.75rem] border border-white/10 bg-gradient-to-b from-white/5 to-white/[0.02] p-10 md:p-14 shadow-2xl backdrop-blur-3xl">
           <div className="max-w-2xl">
