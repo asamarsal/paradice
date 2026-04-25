@@ -1,0 +1,12 @@
+{
+  "project_name": "Paradice",
+  "repo_url": "https://github.com/asamarsal/paradice.git",
+  "commit_sha": "f870d8e043a4e98f0f35fdad83e10e84eb9d01ad",
+  "rollup_chain_id": "paradice-1",
+  "deployed_address": "paradice_ludo",
+  "vm": "move",
+  "native_feature": "initia-usernames",
+  "core_logic_path": "paradice-smartcontract/sources/game_core.move",
+  "native_feature_frontend_path": "paradice-frontend/components/Navbar.tsx",
+  "demo_video_url": "https://youtu.be/REPLACE_ME"
+}
