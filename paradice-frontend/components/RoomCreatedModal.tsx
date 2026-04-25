@@ -186,7 +186,7 @@ export default function RoomCreatedModal({
                             </div>
 
                             <Link
-                                href={canStartGame ? "/play/match" : "#"}
+                                href={canStartGame ? `/play/match?room=${encodeURIComponent(roomCode)}` : "#"}
                                 aria-disabled={!canStartGame}
                                 onClick={(event) => {
                                     if (!canStartGame) {

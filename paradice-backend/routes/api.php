@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DiceRealtimeController;
+use App\Http\Controllers\Api\GameSessionController;
 use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\RoomController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,11 @@ Route::get('/rooms/{roomCode}', [RoomController::class, 'show'])
 Route::post('/rooms/{roomCode}/join', [RoomController::class, 'join'])
     ->where(['roomCode' => '[A-Za-z0-9\-]+' ]);
 Route::post('/rewards/winner-nft/claim', [RewardController::class, 'claimWinnerNft']);
+Route::post('/game-sessions/start', [GameSessionController::class, 'start']);
+Route::get('/game-sessions/{sessionRef}', [GameSessionController::class, 'show'])
+    ->where(['sessionRef' => '[A-Za-z0-9\-]+' ]);
+Route::post('/game-sessions/{sessionRef}/finish', [GameSessionController::class, 'finish'])
+    ->where(['sessionRef' => '[A-Za-z0-9\-]+' ]);
 
 Route::prefix('realtime/rooms/{roomId}')
     ->where(['roomId' => '[A-Za-z0-9\-\._]+'])

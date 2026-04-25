@@ -6,22 +6,19 @@ import { useEffect, useRef, useState } from "react";
 import Footer from "@/components/Footer";
 import RoomCreatedModal from "@/components/RoomCreatedModal";
 import { useSearchParams } from "next/navigation";
+import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { createRoom, getRoomDetail, joinRoom, listRooms, RoomDetail, RoomListItem } from "@/lib/roomApi";
-
-function randomWalletAddress(): string {
-    return `init1${Math.random().toString(36).slice(2, 14)}`;
-}
 
 export default function LobbyPage() {
     const ROOMS_PER_PAGE = 2;
     const searchParams = useSearchParams();
+    const { address, initiaAddress, username: walletUsername, isConnected, openConnect } = useInterwovenKit();
     const [players, setPlayers] = useState<2 | 4>(2);
     const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
     const [stakeAmount, setStakeAmount] = useState(1.0);
     const [isPrivateRoom, setIsPrivateRoom] = useState(false);
     const [password, setPassword] = useState("");
-    const [walletAddress, setWalletAddress] = useState("");
-    const [username, setUsername] = useState("Paradice Player");
+    const [usernameInput, setUsernameInput] = useState("");
 
     const [createdRoom, setCreatedRoom] = useState<RoomDetail | null>(null);
     const [isCreatingRoom, setIsCreatingRoom] = useState(false);
@@ -34,26 +31,14 @@ export default function LobbyPage() {
     const [publicRoomsPage, setPublicRoomsPage] = useState(1);
     const [deepLinkInfo, setDeepLinkInfo] = useState<string | null>(null);
     const autoJoinAttemptedRoomRef = useRef<string | null>(null);
+    const walletAddress = (initiaAddress || address || "").trim();
+    const activeUsername = usernameInput.trim() || walletUsername || "Paradice Player";
 
     useEffect(() => {
-        const storageKey = "paradice_guest_wallet";
-        const existing = window.localStorage.getItem(storageKey);
-        if (existing) {
-            setWalletAddress(existing);
-            return;
+        if (!usernameInput.trim() && walletUsername) {
+            setUsernameInput(walletUsername);
         }
-
-        const generated = randomWalletAddress();
-        window.localStorage.setItem(storageKey, generated);
-        setWalletAddress(generated);
-    }, []);
-
-    const handleSwitchGuestWallet = () => {
-        const storageKey = "paradice_guest_wallet";
-        const generated = randomWalletAddress();
-        window.localStorage.setItem(storageKey, generated);
-        setWalletAddress(generated);
-    };
+    }, [usernameInput, walletUsername]);
 
     useEffect(() => {
         const roomFromQuery = searchParams.get("room");
@@ -67,7 +52,7 @@ export default function LobbyPage() {
     useEffect(() => {
         const roomFromQuery = searchParams.get("room")?.trim().toUpperCase();
         const passwordFromQuery = searchParams.get("password")?.trim();
-        if (!roomFromQuery || !walletAddress) return;
+        if (!roomFromQuery || !walletAddress || !isConnected) return;
         if (autoJoinAttemptedRoomRef.current === roomFromQuery) return;
 
         autoJoinAttemptedRoomRef.current = roomFromQuery;
@@ -88,7 +73,7 @@ export default function LobbyPage() {
                 const room = await joinRoom({
                     roomCode: roomFromQuery,
                     walletAddress,
-                    username,
+                    username: activeUsername,
                     password: passwordFromQuery || joinPassword.trim() || undefined,
                 });
 
@@ -105,7 +90,7 @@ export default function LobbyPage() {
                 setIsJoiningRoom(false);
             }
         })();
-    }, [searchParams, walletAddress, username, joinPassword]);
+    }, [searchParams, walletAddress, isConnected, activeUsername, joinPassword]);
 
     useEffect(() => {
         let cancelled = false;
@@ -164,7 +149,8 @@ export default function LobbyPage() {
 
     const handleCreateRoom = async () => {
         if (!walletAddress) {
-            setCreateError("Wallet belum siap. Reload halaman sekali lagi.");
+            setCreateError("Connect wallet dulu sebelum create room.");
+            openConnect?.();
             return;
         }
 
@@ -179,7 +165,7 @@ export default function LobbyPage() {
         try {
             const room = await createRoom({
                 walletAddress,
-                username,
+                username: activeUsername,
                 entryFee: stakeAmount,
                 maxPlayers: players,
                 isPrivate: isPrivateRoom,
@@ -197,7 +183,8 @@ export default function LobbyPage() {
 
     const joinRoomByCode = async (roomCode: string, passwordInput?: string) => {
         if (!walletAddress) {
-            setJoinError("Wallet belum siap. Reload halaman sekali lagi.");
+            setJoinError("Connect wallet dulu sebelum join room.");
+            openConnect?.();
             return;
         }
 
@@ -208,7 +195,7 @@ export default function LobbyPage() {
             const room = await joinRoom({
                 roomCode,
                 walletAddress,
-                username,
+                username: activeUsername,
                 password: passwordInput,
             });
 
@@ -226,7 +213,11 @@ export default function LobbyPage() {
 
     const activeRoomPlayerCount = createdRoom?.players.length ?? 0;
     const canStartCreatedRoom = createdRoom ? activeRoomPlayerCount >= createdRoom.max_players : false;
-    const canUseStartButton = createdRoom ? canStartCreatedRoom : true;
+    const hasConnectedWallet = isConnected && walletAddress !== "";
+    const canUseStartButton = (createdRoom ? canStartCreatedRoom : true) && hasConnectedWallet;
+    const startMatchHref = createdRoom?.room_code
+        ? `/play/match?room=${encodeURIComponent(createdRoom.room_code)}`
+        : "/play/match";
 
     return (
         <div className="flex flex-col min-h-screen text-white max-w-full overflow-x-hidden">
@@ -296,7 +287,7 @@ export default function LobbyPage() {
                                     <div className="flex items-center justify-between mt-auto">
                                         <div className="flex items-center gap-2.5">
                                             <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-black text-white border border-white/20 shadow-lg">Y</div>
-                                            <span className="text-xs text-white/60 font-bold tracking-tight truncate max-w-[100px]">{username || "You"}</span>
+                                            <span className="text-xs text-white/60 font-bold tracking-tight truncate max-w-[100px]">{activeUsername || "You"}</span>
                                         </div>
                                         <button className="rounded-full bg-gradient-to-r from-orange-600 to-orange-500 px-6 py-2 text-xs font-black uppercase tracking-widest text-white shadow-[0_4px_15px_rgba(234,88,12,0.3)] transition-all hover:scale-105 active:scale-95 group-hover:brightness-110">
                                             Ready
@@ -325,7 +316,7 @@ export default function LobbyPage() {
                                     <div className="flex items-center justify-between mt-auto">
                                         <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0 border border-white/20">W</div>
-                                            <span className="text-xs text-white/80 font-medium truncate max-w-[130px]">{walletAddress || "Waiting wallet..."}</span>
+                                            <span className="text-xs text-white/80 font-medium truncate max-w-[130px]">{walletAddress || "Connect wallet..."}</span>
                                         </div>
                                         <button className="rounded-full bg-gradient-to-r from-orange-600 to-orange-500 px-5 py-1.5 text-xs font-bold text-white shadow-lg transition-transform group-hover:scale-105">
                                             Lobby
@@ -432,7 +423,7 @@ export default function LobbyPage() {
                                     <span>Stake: <strong className="text-white">{stakeAmount.toFixed(2)} INIT</strong></span>
                                 </div>
                                 <Link
-                                    href={canUseStartButton ? "/play/match" : "#"}
+                                    href={canUseStartButton ? startMatchHref : "#"}
                                     aria-disabled={!canUseStartButton}
                                     onClick={(event) => {
                                         if (!canUseStartButton) {
@@ -444,7 +435,9 @@ export default function LobbyPage() {
                                         : "bg-white/10 border border-white/10 text-white/40 cursor-not-allowed"
                                         }`}
                                 >
-                                    {canUseStartButton ? "START MATCH" : `WAITING ${activeRoomPlayerCount}/${createdRoom?.max_players}`}
+                                    {canUseStartButton
+                                        ? "START MATCH"
+                                        : (!hasConnectedWallet ? "CONNECT WALLET" : `WAITING ${activeRoomPlayerCount}/${createdRoom?.max_players}`)}
                                 </Link>
                             </div>
                         </div>
@@ -491,20 +484,22 @@ export default function LobbyPage() {
                             <div className="space-y-2">
                                 <span className="text-sm font-medium text-white/80">Username</span>
                                 <input
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
+                                    value={usernameInput}
+                                    onChange={(e) => setUsernameInput(e.target.value)}
                                     placeholder="Your username"
                                     className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 transition-colors"
                                 />
                                 <div className="flex items-center justify-between gap-2 text-[11px]">
-                                    <span className="truncate text-white/50">Wallet: {walletAddress || "..."}</span>
-                                    <button
-                                        type="button"
-                                        onClick={handleSwitchGuestWallet}
-                                        className="shrink-0 rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/80 hover:bg-white/20 transition-colors"
-                                    >
-                                        Switch Wallet
-                                    </button>
+                                    <span className="truncate text-white/50">Wallet: {walletAddress || "Not connected"}</span>
+                                    {!isConnected && (
+                                        <button
+                                            type="button"
+                                            onClick={() => openConnect?.()}
+                                            className="shrink-0 rounded-md border border-orange-400/30 bg-orange-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-200 hover:bg-orange-500/30 transition-colors"
+                                        >
+                                            Connect
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

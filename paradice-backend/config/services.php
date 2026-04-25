@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'initia' => [
+        'rest_url' => env('INITIA_REST_URL', 'http://localhost:1317'),
+    ],
+
 ];

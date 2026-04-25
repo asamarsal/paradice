@@ -13,6 +13,7 @@ export type RoomDetail = {
   entry_fee: number;
   max_players: 2 | 4;
   is_private: boolean;
+  creator_wallet_address: string;
   status: string;
   expires_at: string | null;
   created_at: string | null;

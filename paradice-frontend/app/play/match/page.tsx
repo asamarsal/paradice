@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
+import { useSearchParams } from "next/navigation";
 import LudoBoardWrapper from "@/components/LudoBoardWrapper";
 import Dice, { DiceHandle } from "@/components/Dice";
 import Navbar from "@/components/Navbar";
@@ -19,9 +20,15 @@ import { useLudoGame } from "@/hooks/useLudoGame";
 import { GameMode } from "@/types/ludo";
 import {
   buildCreateGamePayload,
+  buildJoinGamePayload,
+  buildMovePawnPayload,
+  buildRollDicePayload,
   createGameSession,
   CreateGameMovePayload,
+  getConfiguredMoveModuleAddress,
   modeToMaxPlayers,
+  roomCodeToSessionRef,
+  usdToChainStakeUnits,
 } from "@/lib/gameContractAdapter";
 import {
   commitDiceRoom,
@@ -33,6 +40,8 @@ import {
 } from "@/lib/diceRealtimeApi";
 import { connectGameRealtime } from "@/lib/gameRealtimeSocket";
 import { sha256Hex, verifyDiceRoll } from "@/lib/diceFairness";
+import { finishGameSession, startGameSession } from "@/lib/gameSessionApi";
+import { getRoomDetail } from "@/lib/roomApi";
 import { claimWinnerNft } from "@/lib/rewardApi";
 
 type ModeOption = {
@@ -65,8 +74,6 @@ const TURN_COLORS: Record<string, string> = {
 const DUMMY_START_BALANCE_USD = 20;
 const FEE_RATE = 0.05;
 const PRESET_STAKES_USD = [1, 2, 5, 10];
-const DEFAULT_MATCH_MODE: GameMode = "2player";
-const DEFAULT_MATCH_STAKE_USD = 1;
 
 type ActiveSession = {
   mode: GameMode;
@@ -74,6 +81,7 @@ type ActiveSession = {
   id: number;
   sessionRef: string;
   txHash: string;
+  gameOwnerAddress: string;
   chainStakeUnits: number;
   maxPlayers: 2 | 4;
   createPayload: CreateGameMovePayload;
@@ -89,18 +97,30 @@ type SettlementSummary = {
 
 const formatUsd = (value: number) => `$${value.toFixed(2)}`;
 const roundUsd = (value: number) => Number(value.toFixed(2));
-const createSessionRef = (): string => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-};
 const normalizeNumber = (value: unknown): number | null => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
 const createGuestWalletAddress = (): string => `init1${Math.random().toString(36).slice(2, 14)}`;
+
+const extractTxHash = (txResult: unknown): string => {
+  const maybeRecord = (txResult ?? {}) as Record<string, unknown>;
+  const candidates = [
+    maybeRecord.txHash,
+    maybeRecord.hash,
+    maybeRecord.transactionHash,
+    maybeRecord.tx_hash,
+    maybeRecord.txhash,
+  ];
+
+  for (const value of candidates) {
+    if (typeof value === "string" && value.trim() !== "") {
+      return value.trim();
+    }
+  }
+
+  throw new Error("Tx hash tidak ditemukan dari respons wallet.");
+};
 
 function GameScreen({
   mode,
@@ -109,11 +129,14 @@ function GameScreen({
   maxPlayers,
   sessionRef,
   txHash,
+  gameOwnerAddress,
   createPayload,
   balanceUsd,
   onBackToMenu,
   onGameSettled,
   onRequestRematchStake,
+  onSubmitRollTx,
+  onSubmitMoveTx,
 }: {
   mode: GameMode;
   stakeUsd: number;
@@ -121,11 +144,14 @@ function GameScreen({
   maxPlayers: 2 | 4;
   sessionRef: string;
   txHash: string;
+  gameOwnerAddress: string;
   createPayload: CreateGameMovePayload;
   balanceUsd: number;
   onBackToMenu: () => void;
   onGameSettled: (summary: SettlementSummary) => void;
   onRequestRematchStake: (stakeUsd: number, mode: GameMode) => Promise<{ ok: boolean; message?: string }>;
+  onSubmitRollTx: () => Promise<string | null>;
+  onSubmitMoveTx: (pawnIndex: number) => Promise<string | null>;
 }) {
   const { t } = useLanguage();
   const {
@@ -155,6 +181,7 @@ function GameScreen({
   const playerWon = humanPlayer ? state.winner === humanPlayer.color : false;
   const settlementReportedRef = useRef(false);
   const revealReportedRef = useRef(false);
+  const finishReportedRef = useRef(false);
   const processedNonceRef = useRef<Set<number>>(new Set());
   const [restartNotice, setRestartNotice] = useState<string | null>(null);
   const [isRematchStarting, setIsRematchStarting] = useState(false);
@@ -167,6 +194,8 @@ function GameScreen({
   const [winnerNftClaimNotice, setWinnerNftClaimNotice] = useState<string | null>(null);
   const [winnerNftClaimed, setWinnerNftClaimed] = useState(false);
   const { address, initiaAddress, username } = useInterwovenKit();
+  const onChainMoveReportedRef = useRef<string | null>(null);
+  const settleTxHashRef = useRef<string>(txHash);
 
   const applyServerRoll = useCallback((roll: DiceRollResponse) => {
     if (state.phase !== "waiting_roll") return;
@@ -180,15 +209,20 @@ function GameScreen({
 
     setIsServerRollPending(true);
     try {
+      const latestTxHash = await onSubmitRollTx();
+      if (latestTxHash) {
+        settleTxHashRef.current = latestTxHash;
+      }
       const payload = await rollDiceFromServer(sessionRef, state.currentPlayer);
       applyServerRoll(payload);
       setDiceSyncNotice(null);
-    } catch {
-      setDiceSyncNotice("Failed to fetch dice result from backend.");
+    } catch (error) {
+      const fallbackMessage = "Failed to fetch dice result from backend.";
+      setDiceSyncNotice(error instanceof Error ? error.message : fallbackMessage);
     } finally {
       setIsServerRollPending(false);
     }
-  }, [applyServerRoll, isDiceSyncReady, isServerRollPending, sessionRef, state.currentPlayer]);
+  }, [applyServerRoll, isDiceSyncReady, isServerRollPending, onSubmitRollTx, sessionRef, state.currentPlayer]);
 
   useEffect(() => {
     let cancelled = false;
@@ -345,6 +379,48 @@ function GameScreen({
     sessionRef.length > 16 ? `${sessionRef.slice(0, 12)}...` : sessionRef;
   const compactTxHash =
     txHash.length > 16 ? `${txHash.slice(0, 12)}...${txHash.slice(-4)}` : txHash;
+  const compactGameOwner =
+    gameOwnerAddress.length > 16 ? `${gameOwnerAddress.slice(0, 12)}...` : gameOwnerAddress;
+
+  useEffect(() => {
+    if (state.phase !== "game_over" || finishReportedRef.current) return;
+
+    finishReportedRef.current = true;
+    void finishGameSession({
+      sessionRef,
+      settleTxHash: settleTxHashRef.current || txHash,
+    }).catch((error) => {
+      setFairnessNotice(error instanceof Error ? error.message : "Verifikasi settlement on-chain gagal.");
+    });
+  }, [sessionRef, state.phase, txHash]);
+
+  useEffect(() => {
+    if (state.phase !== "moving") return;
+
+    const movingPawn = state.pawns.find((pawn) => pawn.targetSteps !== undefined);
+    if (!movingPawn) return;
+
+    const moveSignature = `${state.currentPlayer}:${movingPawn.id}:${state.lastRolledValue ?? "x"}`;
+    if (onChainMoveReportedRef.current === moveSignature) return;
+    onChainMoveReportedRef.current = moveSignature;
+
+    const segments = movingPawn.id.split("_");
+    const pawnIndexRaw = segments[segments.length - 1];
+    const pawnIndex = Number(pawnIndexRaw);
+
+    if (!Number.isFinite(pawnIndex) || pawnIndex < 0 || pawnIndex > 3) return;
+
+    void (async () => {
+      try {
+        const latestTxHash = await onSubmitMoveTx(pawnIndex);
+        if (latestTxHash) {
+          settleTxHashRef.current = latestTxHash;
+        }
+      } catch (error) {
+        setFairnessNotice(error instanceof Error ? error.message : "Submit move on-chain gagal.");
+      }
+    })();
+  }, [onSubmitMoveTx, state.currentPlayer, state.lastRolledValue, state.pawns, state.phase]);
 
   const handleClaimWinnerNft = useCallback(async () => {
     if (state.phase !== "game_over" || !playerWon) return;
@@ -363,7 +439,6 @@ function GameScreen({
         sessionRef,
         mode,
         stakeUsd,
-        playerWon,
       });
 
       setWinnerNftClaimed(true);
@@ -391,7 +466,9 @@ function GameScreen({
 
     settlementReportedRef.current = false;
     revealReportedRef.current = false;
+    finishReportedRef.current = false;
     processedNonceRef.current.clear();
+    onChainMoveReportedRef.current = null;
     setRestartNotice(null);
     setFairnessNotice(null);
     setWinnerNftClaimed(false);
@@ -578,6 +655,10 @@ function GameScreen({
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Tx</span>
                   <strong className="font-mono text-emerald-400">{compactTxHash}</strong>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold">Owner</span>
+                  <strong className="font-mono text-emerald-400">{compactGameOwner}</strong>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">Call</span>
@@ -1025,24 +1106,12 @@ function CTAAndFooter() {
 
 export default function Home() {
   const { t } = useLanguage();
+  const { requestTxBlock, initiaAddress, address } = useInterwovenKit();
+  const searchParams = useSearchParams();
   const heroSectionRef = useRef<HTMLElement>(null);
   const [selectedMode, setSelectedMode] = useState<GameMode>("2player");
-  const [activeSession, setActiveSession] = useState<ActiveSession | null>(() => {
-    const payload = buildCreateGamePayload(DEFAULT_MATCH_MODE, DEFAULT_MATCH_STAKE_USD);
-    return {
-      mode: DEFAULT_MATCH_MODE,
-      stakeUsd: DEFAULT_MATCH_STAKE_USD,
-      id: Date.now(),
-      sessionRef: createSessionRef(),
-      txHash: `0xmock${Math.random().toString(16).slice(2, 12)}`,
-      chainStakeUnits: payload.args[0],
-      maxPlayers: payload.args[1],
-      createPayload: payload,
-    };
-  });
-  const [dummyBalanceUsd, setDummyBalanceUsd] = useState(
-    roundUsd(DUMMY_START_BALANCE_USD - DEFAULT_MATCH_STAKE_USD)
-  );
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
+  const [dummyBalanceUsd, setDummyBalanceUsd] = useState(DUMMY_START_BALANCE_USD);
   const [selectedPresetStake, setSelectedPresetStake] = useState(PRESET_STAKES_USD[0]);
   const [isCustomStake, setIsCustomStake] = useState(false);
   const [customStakeInput, setCustomStakeInput] = useState("");
@@ -1061,6 +1130,47 @@ export default function Home() {
   const estimatedPotUsd = selectedStakeUsd ? roundUsd(selectedStakeUsd * modePlayerCount) : 0;
   const estimatedTaxUsd = roundUsd(estimatedPotUsd * FEE_RATE);
   const estimatedPayoutUsd = roundUsd(estimatedPotUsd - estimatedTaxUsd);
+  const configuredChainId = (process.env.NEXT_PUBLIC_MOVE_CHAIN_ID ?? "").trim();
+  const configuredModuleAddress = getConfiguredMoveModuleAddress();
+  const roomCodeFromQuery = searchParams.get("room")?.trim().toUpperCase();
+  const [activeGameOwnerAddress, setActiveGameOwnerAddress] = useState<string | null>(null);
+
+  const executeMoveTx = useCallback(async (
+    functionName: "create_game" | "join_game" | "roll_dice" | "move_pawn",
+    args: Array<string | number>,
+  ): Promise<string> => {
+    const walletAddress = (initiaAddress || address || "").trim();
+    if (!walletAddress) {
+      throw new Error("Wallet belum terhubung.");
+    }
+
+    if (!configuredChainId) {
+      throw new Error("NEXT_PUBLIC_MOVE_CHAIN_ID belum di-set.");
+    }
+
+    if (typeof requestTxBlock !== "function") {
+      throw new Error("Wallet provider tidak mendukung requestTxBlock.");
+    }
+
+    const txResult = await (requestTxBlock as unknown as (params: unknown) => Promise<unknown>)({
+      chainId: configuredChainId,
+      messages: [
+        {
+          typeUrl: "/initia.move.v1.MsgExecute",
+          value: {
+            sender: walletAddress.toLowerCase(),
+            moduleAddress: configuredModuleAddress,
+            moduleName: "game_core",
+            functionName,
+            typeArgs: [],
+            args: args.map((arg) => String(arg)),
+          },
+        },
+      ],
+    });
+
+    return extractTxHash(txResult);
+  }, [address, configuredChainId, configuredModuleAddress, initiaAddress, requestTxBlock]);
 
   const launchSession = async (mode: GameMode, stakeUsd: number): Promise<{ ok: boolean; message?: string }> => {
     if (dummyBalanceUsd < stakeUsd) {
@@ -1070,7 +1180,62 @@ export default function Home() {
       };
     }
 
-    const session = await createGameSession(mode, stakeUsd);
+    const walletAddress = (initiaAddress || address || "").trim();
+    if (!walletAddress) {
+      return {
+        ok: false,
+        message: "Wallet belum terhubung.",
+      };
+    }
+    let sessionRefOverride: string | undefined;
+    let gameOwnerAddress = walletAddress;
+    let txHash = "";
+    let shouldRegisterSessionStart = true;
+
+    if (roomCodeFromQuery) {
+      const room = await getRoomDetail(roomCodeFromQuery);
+      sessionRefOverride = roomCodeToSessionRef(room.room_code);
+      gameOwnerAddress = room.creator_wallet_address || walletAddress;
+
+      const isCreator = room.creator_wallet_address.toLowerCase() === walletAddress.toLowerCase();
+      if (!isCreator) {
+        const joinPayload = buildJoinGamePayload(gameOwnerAddress);
+        txHash = await executeMoveTx(joinPayload.functionName, joinPayload.args);
+        shouldRegisterSessionStart = false;
+      }
+    }
+
+    const session = txHash !== ""
+      ? {
+        sessionRef: sessionRefOverride ?? roomCodeToSessionRef(roomCodeFromQuery ?? walletAddress),
+        txHash,
+        stakeUnits: usdToChainStakeUnits(stakeUsd),
+        maxPlayers: modeToMaxPlayers(mode),
+        payload: buildCreateGamePayload(mode, stakeUsd),
+      }
+      : await createGameSession(
+        mode,
+        stakeUsd,
+        async (payload) => ({ txHash: await executeMoveTx(payload.functionName, payload.args) }),
+        sessionRefOverride,
+      );
+
+    if (shouldRegisterSessionStart) {
+      await startGameSession({
+        sessionRef: session.sessionRef,
+        roomCode: roomCodeFromQuery || undefined,
+        creatorWalletAddress: walletAddress,
+        mode,
+        stakeUsd,
+        stakeUnits: session.stakeUnits,
+        maxPlayers: session.maxPlayers,
+        chainId: configuredChainId,
+        moduleAddress: configuredModuleAddress,
+        createGameTxHash: session.txHash,
+      });
+    }
+
+    setActiveGameOwnerAddress(gameOwnerAddress);
 
     setDummyBalanceUsd((prev) => roundUsd(prev - stakeUsd));
     setActiveSession({
@@ -1079,6 +1244,7 @@ export default function Home() {
       id: Date.now(),
       sessionRef: session.sessionRef,
       txHash: session.txHash,
+      gameOwnerAddress,
       chainStakeUnits: session.stakeUnits,
       maxPlayers: session.maxPlayers,
       createPayload: session.payload,
@@ -1147,11 +1313,24 @@ export default function Home() {
         maxPlayers={activeSession.maxPlayers}
         sessionRef={activeSession.sessionRef}
         txHash={activeSession.txHash}
+        gameOwnerAddress={activeSession.gameOwnerAddress}
         createPayload={activeSession.createPayload}
         balanceUsd={dummyBalanceUsd}
         onBackToMenu={() => setActiveSession(null)}
         onGameSettled={handleGameSettled}
         onRequestRematchStake={handleRequestRematchStake}
+        onSubmitRollTx={async () => {
+          const owner = (activeSession.gameOwnerAddress || activeGameOwnerAddress || "").trim();
+          if (!owner) return null;
+          const payload = buildRollDicePayload(owner);
+          return executeMoveTx(payload.functionName, payload.args);
+        }}
+        onSubmitMoveTx={async (pawnIndex) => {
+          const owner = (activeSession.gameOwnerAddress || activeGameOwnerAddress || "").trim();
+          if (!owner) return null;
+          const payload = buildMovePawnPayload(owner, pawnIndex);
+          return executeMoveTx(payload.functionName, payload.args);
+        }}
       />
     );
   }

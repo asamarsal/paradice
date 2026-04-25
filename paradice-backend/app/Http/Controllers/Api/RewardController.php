@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\GameSession;
 use App\Models\Nft;
 use App\Models\User;
 use App\Models\UserNft;
@@ -21,14 +22,7 @@ class RewardController extends Controller
             'session_ref' => ['required', 'string', 'max:120'],
             'mode' => ['required', 'string', 'in:2player,4player'],
             'stake_usd' => ['required', 'numeric', 'min:0.1'],
-            'player_won' => ['required', 'boolean'],
         ]);
-
-        if (!$validated['player_won']) {
-            return response()->json([
-                'message' => 'NFT winner hanya bisa diklaim oleh pemenang.',
-            ], 422);
-        }
 
         $walletAddress = trim((string) $validated['wallet_address']);
         $sessionRef = trim((string) $validated['session_ref']);
@@ -38,6 +32,40 @@ class RewardController extends Controller
         $contractAddress = 'paradice_ludo_winner';
         $tokenId = $mode === '4player' ? 2004 : 2002;
         $username = isset($validated['username']) ? trim((string) $validated['username']) : null;
+
+        $session = GameSession::query()
+            ->where('session_ref', $sessionRef)
+            ->first();
+
+        if (!$session || $session->status !== 'finished') {
+            return response()->json([
+                'message' => 'Session game belum selesai atau belum tercatat.',
+            ], 422);
+        }
+
+        if ($session->verification_status !== 'verified') {
+            return response()->json([
+                'message' => 'Session belum lolos verifikasi on-chain.',
+            ], 422);
+        }
+
+        if (!is_string($session->winner_wallet_address) || trim($session->winner_wallet_address) === '') {
+            return response()->json([
+                'message' => 'Pemenang sesi belum tercatat.',
+            ], 422);
+        }
+
+        if (trim($session->winner_wallet_address) !== $walletAddress) {
+            return response()->json([
+                'message' => 'NFT winner hanya bisa diklaim wallet pemenang.',
+            ], 422);
+        }
+
+        if (!is_string($session->settle_tx_hash) || trim($session->settle_tx_hash) === '') {
+            return response()->json([
+                'message' => 'Settlement on-chain belum tercatat untuk sesi ini.',
+            ], 422);
+        }
 
         $user = $this->resolveOrCreateUser($walletAddress, $username);
 

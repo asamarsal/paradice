@@ -51,13 +51,9 @@ export default function Navbar({ balanceUsd }: NavbarProps) {
     const walletAddress = initiaAddress || address || '';
     const walletDisplayName = username || formatAddress(walletAddress);
     const walletAssetValue = useMemo(() => {
-        // Realtime logic based on user's requirement:
-        if (network === 'mainnet') return 0;
-        if (network === 'testnet') return 0.95;
-
         if (!isConnected) return 0;
         return Number.isFinite(totalValue) ? totalValue : 0;
-    }, [network, isConnected, totalValue]);
+    }, [isConnected, totalValue]);
 
     const handleNetworkChange = (nextNetwork: AppNetwork) => {
         if (nextNetwork === network) return;

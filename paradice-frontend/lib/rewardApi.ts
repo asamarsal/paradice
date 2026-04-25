@@ -6,7 +6,6 @@ export type ClaimWinnerNftInput = {
   sessionRef: string;
   mode: "2player" | "4player";
   stakeUsd: number;
-  playerWon: boolean;
 };
 
 export type ClaimWinnerNftResponse = {
@@ -57,7 +56,6 @@ export async function claimWinnerNft(input: ClaimWinnerNftInput): Promise<ClaimW
       session_ref: input.sessionRef,
       mode: input.mode,
       stake_usd: input.stakeUsd,
-      player_won: input.playerWon,
     }),
   });
 }

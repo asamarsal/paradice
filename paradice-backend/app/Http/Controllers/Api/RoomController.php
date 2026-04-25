@@ -287,6 +287,7 @@ class RoomController extends Controller
             'entry_fee' => (float) $room->entry_fee,
             'max_players' => (int) $room->max_players,
             'is_private' => (bool) $room->is_private,
+            'creator_wallet_address' => (string) (User::query()->find($room->created_by)?->wallet_address ?? ''),
             'status' => $room->status,
             'expires_at' => optional($room->expires_at)?->toISOString(),
             'created_at' => optional($room->created_at)?->toISOString(),
