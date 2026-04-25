@@ -162,7 +162,6 @@ export default function Providers({ children }: PropsWithChildren) {
                             {...interwovenConfig}
                             defaultChainId={customChain.chain_id}
                             customChain={customChain}
-                            customChains={[customChain]}
                         >
                             {children}
                         </InterwovenKitProvider>
